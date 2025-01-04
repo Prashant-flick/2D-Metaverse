@@ -614,3 +614,149 @@ describe("Arena endpoints", () => {
         expect(res.status).tobe(200);
     })
 })
+
+describe("Admin endpoints", () => {
+    let userToken;
+    let adminToken;
+    let adminId;
+    let userId;
+    let elemId;
+
+    beforeAll(async() => {
+        const username = `Prashant-${Math.random()}`;
+        const UserUsername = `Prashant-${Math.random()}`;
+        const password = '12345678';
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username,
+            password,
+            role: 'admin'
+        })
+
+        const adminRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username,
+            password
+        })
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username: UserUsername,
+            password,
+            role: 'user'
+        })
+
+        const userRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username: UserUsername,
+            password
+        })
+        
+        adminToken = adminRes.data.token
+        userToken = userRes.data.token
+        adminId = adminRes.data.userId
+        userId = userRes.data.userId
+    })
+
+    test("only admin should be able to create an element", async()=> {
+        const res = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: "chair1",
+            widht: 10,
+            height: 10,
+            static: false,
+            "imageUrl": "https://image.com/chair3.png",
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        const newRes = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: "chair1",
+            widht: 10,
+            height: 10,
+            static: false,
+            "imageUrl": "https://image.com/chair3.png",
+        }, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
+
+        expect(newRes.status).tobe(403);
+
+        elemId = res.data.id
+
+        expect(res.status).tobe(200);
+        expect(res.data.id).tobeDefined();
+    })
+
+    test("only admin should be able to update an element", async()=>{
+        const res = await axios.put(`${BACKEND_URL}/admin/element/${elemId}`, {
+            "imageUrl": "https://image.com/chair4.png",
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+        const newRes = await axios.put(`${BACKEND_URL}/admin/element/${elemId}`, {
+            "imageUrl": "https://image.com/chair5.png",
+        }, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
+
+        expect(res.status).tobe(200);
+        expect(newRes.status).tobe(403);
+    })
+
+    test("only admin should be able to create an avatar", async()=>{
+        const res = await axios.post(`${BACKEND_URL}/admin/avatar`, {
+            imageUrl: "https://image.com/avatar1.png",
+            name: "bird"
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        const newRes = await axios.post(`${BACKEND_URL}/admin/avatar`, {
+            imageUrl: "https://image.com/avatar1.png",
+            name: "bird"
+        }, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
+
+        expect(res.status).tobe(200);
+        expect(res.data.id).tobeDefined();
+        expect(newRes.status).tobe(403);
+    })
+
+    test("only admin should be able to create a map", async()=> {
+        const res = await axios.post(`${BACKEND_URL}/admin/map`, {
+            name: "map1",
+            dimensions: "100x200",
+            thumbnail: "https://image.com/chair3.png",
+            defaultElements: []
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        const newRes = await axios.post(`${BACKEND_URL}/admin/map`, {
+            name: "map2",
+            dimensions: "100x200",
+            thumbnail: "https://image.com/chair3.png",
+            defaultElements: []
+        }, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
+
+        expect(newRes.status).tobe(403);
+        expect(res.status).tobe(200);
+        expect(res.data.id).tobeDefined();
+    })
+})
