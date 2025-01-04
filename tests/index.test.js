@@ -186,7 +186,7 @@ describe("User information endpoints", () => {
     })
 
     test("get Back avatar information for a user", async() => {
-        const res = await axios.get(`${BACKEND_URL}/user/metadata/bulk?ids=[${userId},${adminId}]`);
+        const res = await axios.get(`${BACKEND_URL}/user/metadata/bulk?ids=[${userAvatarId},${adminAvatarId}]`);
 
         expect(res.status).tobe(200)
         expect(res.data.avatars.length).toBeGreaterThan(2)
@@ -194,3 +194,214 @@ describe("User information endpoints", () => {
         expect(res.data.avatars[1].userId).tobe(adminId)
     })
 });
+
+describe("Space endpoints", () => {
+    let userToken;
+    let adminToken;
+    let adminId;
+    let userId;
+    let mapId;
+    let elem1Id;
+    let elem2Id;
+    let spaceId;
+
+    beforeAll(async() => {
+        const username = `Prashant-${Math.random()}`;
+        const UserUsername = `Prashant-${Math.random()}`;
+        const password = '12345678';
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username,
+            password,
+            role: 'admin'
+        })
+
+        const adminRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username,
+            password
+        })
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username: UserUsername,
+            password,
+            role: 'user'
+        })
+
+        const userRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username: UserUsername,
+            password
+        })
+        
+        adminToken = adminRes.data.token
+        userToken = userRes.data.token
+        adminId = adminRes.data.userId
+        userId = userRes.data.userId
+
+        const elem1Res = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: `chair-1`,
+            width: 2,
+            height: 2,
+            static: false,
+            imageUrl: "https://image.com/chair.png"
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        const elem2Res = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: `table-1`,
+            width: 5,
+            height: 5,
+            static: true,
+            imageUrl: "https://image.com/chair.png"
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        elem1Id = elem1Res.data.id
+        elem2Id = elem2Res.data.id
+
+        const mapRes = await axios.post(`${BACKEND_URL}/admin/map`, {
+            name: `map-${Math.random()}`,
+            thumbnail: "https://image.com/thumbnail.png",
+            dimensions: "100x200",
+            "defaultElements": [{
+                elementId: elem1Id,
+                x: 20,
+                y: 20,
+            }, {
+                elementId: elem1Id,
+                x: 25,
+                y: 25,
+            }, {
+                elementId: elem2Id,
+                x: 30,
+                y: 30,
+            }]
+        })
+
+        mapId = mapRes.data.id
+    })
+
+    test("a user can create a space", async() => {
+
+        const res = await axios.post(`${BACKEND_URL}/space`, {
+            name: `space-${Math.random()}`,
+            dimensions: "100x200",
+            mapId
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        spaceId = res.data.id
+        expect(res.status).tobe(200);
+        expect(res.data.id).tobeDefined();
+    })
+
+    test("user is able to create a space without mapId (empty space)", async() => {
+
+        const res = await axios.post(`${BACKEND_URL}/space`, {
+            name: `space-${Math.random()}`,
+            dimensions: "100x200",
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(200);
+        expect(res.data.id).tobeDefined();
+    })
+
+    test("user is not able to create a space without mapId and dimensions", async() => {
+
+        const res = await axios.post(`${BACKEND_URL}/space`, {
+            name: `space-${Math.random()}`,
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(400);
+    })
+
+    test("user should not be able to delete a space which dosent exist", async() => {
+        const res = await axios.delete(`${BACKEND_URL}/space/randomDoesntexist`, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(400);
+    })
+
+    test("user should be able to delete a space which exist", async() => {
+        const res = await axios.delete(`${BACKEND_URL}/space/${spaceId}`, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(200);
+    })
+
+    test("user should not be able to delete a space created by another user", async() => {
+        const deleteSpaceRes = await axios.delete(`${BACKEND_URL}/space/${spaceId}`, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
+
+        expect(deleteSpaceRes.status).toBe(403)
+    })
+
+    test("get my existing spaces", async() => {
+        const userSpacesRes = await axios.get(`${BACKEND_URL}/space/all`, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
+
+        const adminSpacesRes = await axios.get(`${BACKEND_URL}/space/all`, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(userSpacesRes.status).tobe(200);
+        expect(adminSpacesRes.status).tobe(200);
+        expect(adminSpacesRes.data.spaces.length).not.toBe(0);
+        expect(userSpacesRes.data.spaces.length).toBe(0);
+    })
+
+    test("get my existing spaces", async() => {
+        const userSpacesRes = await axios.get(`${BACKEND_URL}/space/all`, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
+
+        const adminSpacesRes = await axios.get(`${BACKEND_URL}/space/all`, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(userSpacesRes.status).tobe(200);
+        expect(adminSpacesRes.status).tobe(200);
+        expect(adminSpacesRes.data.spaces.length).not.toBe(0);
+        const filteredSpace = adminSpacesRes.data.spaceId.find(x => x.id === spaceId)
+        expect(filteredSpace).tobeDefined();
+        expect(userSpacesRes.data.spaces.length).toBe(0);
+    })
+})
+
+describe("Arena endpoints", () => {
+
+})
