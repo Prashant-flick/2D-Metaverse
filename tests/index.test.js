@@ -403,5 +403,214 @@ describe("Space endpoints", () => {
 })
 
 describe("Arena endpoints", () => {
+    let userToken;
+    let adminToken;
+    let adminId;
+    let userId;
+    let mapId;
+    let elem1Id;
+    let elem2Id;
+    let spaceId;
+    let arenaElem1;
 
+    beforeAll(async() => {
+        const username = `Prashant-${Math.random()}`;
+        const UserUsername = `Prashant-${Math.random()}`;
+        const password = '12345678';
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username,
+            password,
+            role: 'admin'
+        })
+
+        const adminRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username,
+            password
+        })
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username: UserUsername,
+            password,
+            role: 'user'
+        })
+
+        const userRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username: UserUsername,
+            password
+        })
+        
+        adminToken = adminRes.data.token
+        userToken = userRes.data.token
+        adminId = adminRes.data.userId
+        userId = userRes.data.userId
+
+        const elem1Res = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: `chair-1`,
+            width: 2,
+            height: 2,
+            static: false,
+            imageUrl: "https://image.com/chair.png"
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        const elem2Res = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: `table-1`,
+            width: 5,
+            height: 5,
+            static: true,
+            imageUrl: "https://image.com/chair.png"
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        elem1Id = elem1Res.data.id
+        elem2Id = elem2Res.data.id
+
+        const mapRes = await axios.post(`${BACKEND_URL}/admin/map`, {
+            name: `map-${Math.random()}`,
+            thumbnail: "https://image.com/thumbnail.png",
+            dimensions: "100x200",
+            "defaultElements": [{
+                elementId: elem1Id,
+                x: 20,
+                y: 20,
+            }, {
+                elementId: elem1Id,
+                x: 25,
+                y: 25,
+            }, {
+                elementId: elem2Id,
+                x: 30,
+                y: 30,
+            }]
+        })
+
+        mapId = mapRes.data.id
+
+        const spaceRes = await axios.post(`${BACKEND_URL}/space`, {
+            name: `space-${Math.random()}`,
+            dimensions: "100x200",
+            mapId
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        spaceId = spaceRes.data.id
+    })
+
+    test("cant get back a space with invalid space id", async() => {
+        const res = await axios.get(`${BACKEND_URL}/space/incorrectSpaceId`, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(400);
+    })
+
+    test("user can join/enter/get a space", async() => {
+        const res = await axios.get(`${BACKEND_URL}/space/${spaceId}`, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        arenaElem1 = res.data.element[0].id;
+        expect(res.status).toBe(200);
+        expect(res.data.dimensions).tobe("100x200");
+        expect(res.data.elements.length).tobe(3);
+    })
+
+    test("Delete endpoint is able to delete an element", async() => {
+        const res = await axios.delete(`${BACKEND_URL}/space/element`, {
+            spaceId,
+            elementId: arenaElem1,
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        });
+
+        expect(res.status).tobe(200);
+
+        const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`)
+
+        expect(newRes.status).tobe(200);
+        expect(newRes.data.elements.lenght).tobe(2);
+    })
+
+    test("Delete endpoint should not be able to delete an element with wrong spaceid or elementid", async() => {
+        const res1 = await axios.delete(`${BACKEND_URL}/space/element`, {
+            spaceId,
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        const res2 = await axios.delete(`${BACKEND_URL}/space/element`, {
+            elementId: arenaElem1,
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res1.status).tobe(400);
+        expect(res2.status).tobe(400);
+    })
+
+    test("user can add an element to a space", async() => {
+        const res = await axios.post(`${BACKEND_URL}/space/element`, {
+            elementId: elem1Id,
+            spaceId,
+            x: 12,
+            y: 15,
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(200);
+        expect(res.data.id).tobeDefined;
+
+        const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`);
+
+        expect(newRes.status).tobe(200);
+        expect(newRes.data.elements.lenght).tobe(3);
+    })
+
+    test("user can not add an element to a space with wrong dimensions", async() => {
+        const res = await axios.post(`${BACKEND_URL}/space/element`, {
+            elementId: elem1Id,
+            spaceId,
+            x: 30000,
+            y: 40000,
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(400);
+    })
+
+    test("user can see all the available elements which can we added to the arena", async() => {
+        const res = await axios.get(`${BACKEND_URL}/elements`, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        expect(res.status).tobe(200);
+    })
 })
