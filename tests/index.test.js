@@ -1,6 +1,7 @@
 const axios = require("axios");
 
 const BACKEND_URL = "https://localhost:3000/api/v1";
+const WS_URL = "ws://localhost:3001"
 
 describe("Authentication", () => {
     test('User is able to sign up only once', async() => {
@@ -49,7 +50,7 @@ describe("Authentication", () => {
         })
 
         expect(signInRes.status).toBe(200)
-        expect(signInRes.data.token).tobeDefined()
+        expect(signInRes.data.token).toBeDefined()
     })
 
     test('SignIn failed if the username and password are incorrect', async() => {
@@ -133,10 +134,10 @@ describe("User information endpoints", () => {
     test("user can get all the available avatars", async() => {
         const res = await axios.get(`${BACKEND_URL}/avatars`)
 
-        expect(res.status).tobe(200)
+        expect(res.status).toBe(200)
         expect(res.data.avatars.length).toBeGreaterThan(0)
         const currentAvatar = res.data.avatars.find(x => x.id===avatarId);
-        expect(currentAvatar).tobeDefined();
+        expect(currentAvatar).toBeDefined();
     })
 
     test("user can't update their metaData with a wrong avatarId", async() => {
@@ -188,10 +189,10 @@ describe("User information endpoints", () => {
     test("get Back avatar information for a user", async() => {
         const res = await axios.get(`${BACKEND_URL}/user/metadata/bulk?ids=[${userAvatarId},${adminAvatarId}]`);
 
-        expect(res.status).tobe(200)
+        expect(res.status).toBe(200)
         expect(res.data.avatars.length).toBeGreaterThan(2)
-        expect(res.data.avatars[0].userId).tobe(userId)
-        expect(res.data.avatars[1].userId).tobe(adminId)
+        expect(res.data.avatars[0].userId).toBe(userId)
+        expect(res.data.avatars[1].userId).toBe(adminId)
     })
 });
 
@@ -287,7 +288,6 @@ describe("Space endpoints", () => {
     })
 
     test("a user can create a space", async() => {
-
         const res = await axios.post(`${BACKEND_URL}/space`, {
             name: `space-${Math.random()}`,
             dimensions: "100x200",
@@ -299,8 +299,8 @@ describe("Space endpoints", () => {
         })
 
         spaceId = res.data.id
-        expect(res.status).tobe(200);
-        expect(res.data.id).tobeDefined();
+        expect(res.status).toBe(200);
+        expect(res.data.id).toBeDefined();
     })
 
     test("user is able to create a space without mapId (empty space)", async() => {
@@ -314,8 +314,8 @@ describe("Space endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(200);
-        expect(res.data.id).tobeDefined();
+        expect(res.status).toBe(200);
+        expect(res.data.id).toBeDefined();
     })
 
     test("user is not able to create a space without mapId and dimensions", async() => {
@@ -328,7 +328,7 @@ describe("Space endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(400);
+        expect(res.status).toBe(400);
     })
 
     test("user should not be able to delete a space which dosent exist", async() => {
@@ -338,7 +338,7 @@ describe("Space endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(400);
+        expect(res.status).toBe(400);
     })
 
     test("user should be able to delete a space which exist", async() => {
@@ -348,7 +348,7 @@ describe("Space endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(200);
+        expect(res.status).toBe(200);
     })
 
     test("user should not be able to delete a space created by another user", async() => {
@@ -374,8 +374,8 @@ describe("Space endpoints", () => {
             }
         })
 
-        expect(userSpacesRes.status).tobe(200);
-        expect(adminSpacesRes.status).tobe(200);
+        expect(userSpacesRes.status).toBe(200);
+        expect(adminSpacesRes.status).toBe(200);
         expect(adminSpacesRes.data.spaces.length).not.toBe(0);
         expect(userSpacesRes.data.spaces.length).toBe(0);
     })
@@ -393,11 +393,11 @@ describe("Space endpoints", () => {
             }
         })
 
-        expect(userSpacesRes.status).tobe(200);
-        expect(adminSpacesRes.status).tobe(200);
+        expect(userSpacesRes.status).toBe(200);
+        expect(adminSpacesRes.status).toBe(200);
         expect(adminSpacesRes.data.spaces.length).not.toBe(0);
         const filteredSpace = adminSpacesRes.data.spaceId.find(x => x.id === spaceId)
-        expect(filteredSpace).tobeDefined();
+        expect(filteredSpace).toBeDefined();
         expect(userSpacesRes.data.spaces.length).toBe(0);
     })
 })
@@ -513,7 +513,7 @@ describe("Arena endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(400);
+        expect(res.status).toBe(400);
     })
 
     test("user can join/enter/get a space", async() => {
@@ -525,8 +525,8 @@ describe("Arena endpoints", () => {
 
         arenaElem1 = res.data.element[0].id;
         expect(res.status).toBe(200);
-        expect(res.data.dimensions).tobe("100x200");
-        expect(res.data.elements.length).tobe(3);
+        expect(res.data.dimensions).toBe("100x200");
+        expect(res.data.elements.length).toBe(3);
     })
 
     test("Delete endpoint is able to delete an element", async() => {
@@ -539,12 +539,12 @@ describe("Arena endpoints", () => {
             }
         });
 
-        expect(res.status).tobe(200);
+        expect(res.status).toBe(200);
 
         const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`)
 
-        expect(newRes.status).tobe(200);
-        expect(newRes.data.elements.lenght).tobe(2);
+        expect(newRes.status).toBe(200);
+        expect(newRes.data.elements.lenght).toBe(2);
     })
 
     test("Delete endpoint should not be able to delete an element with wrong spaceid or elementid", async() => {
@@ -564,8 +564,8 @@ describe("Arena endpoints", () => {
             }
         })
 
-        expect(res1.status).tobe(400);
-        expect(res2.status).tobe(400);
+        expect(res1.status).toBe(400);
+        expect(res2.status).toBe(400);
     })
 
     test("user can add an element to a space", async() => {
@@ -580,13 +580,13 @@ describe("Arena endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(200);
-        expect(res.data.id).tobeDefined;
+        expect(res.status).toBe(200);
+        expect(res.data.id).toBeDefined;
 
         const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`);
 
-        expect(newRes.status).tobe(200);
-        expect(newRes.data.elements.lenght).tobe(3);
+        expect(newRes.status).toBe(200);
+        expect(newRes.data.elements.lenght).toBe(3);
     })
 
     test("user can not add an element to a space with wrong dimensions", async() => {
@@ -601,7 +601,7 @@ describe("Arena endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(400);
+        expect(res.status).toBe(400);
     })
 
     test("user can see all the available elements which can we added to the arena", async() => {
@@ -611,7 +611,7 @@ describe("Arena endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(200);
+        expect(res.status).toBe(200);
     })
 })
 
@@ -680,12 +680,12 @@ describe("Admin endpoints", () => {
             }
         })
 
-        expect(newRes.status).tobe(403);
+        expect(newRes.status).toBe(403);
 
         elemId = res.data.id
 
-        expect(res.status).tobe(200);
-        expect(res.data.id).tobeDefined();
+        expect(res.status).toBe(200);
+        expect(res.data.id).toBeDefined();
     })
 
     test("only admin should be able to update an element", async()=>{
@@ -704,8 +704,8 @@ describe("Admin endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(200);
-        expect(newRes.status).tobe(403);
+        expect(res.status).toBe(200);
+        expect(newRes.status).toBe(403);
     })
 
     test("only admin should be able to create an avatar", async()=>{
@@ -727,9 +727,9 @@ describe("Admin endpoints", () => {
             }
         })
 
-        expect(res.status).tobe(200);
-        expect(res.data.id).tobeDefined();
-        expect(newRes.status).tobe(403);
+        expect(res.status).toBe(200);
+        expect(res.data.id).toBeDefined();
+        expect(newRes.status).toBe(403);
     })
 
     test("only admin should be able to create a map", async()=> {
@@ -755,8 +755,253 @@ describe("Admin endpoints", () => {
             }
         })
 
-        expect(newRes.status).tobe(403);
-        expect(res.status).tobe(200);
-        expect(res.data.id).tobeDefined();
+        expect(newRes.status).toBe(403);
+        expect(res.status).toBe(200);
+        expect(res.data.id).toBeDefined();
     })
+})
+
+describe("Websocket tests", () => {
+    let userToken;
+    let adminToken;
+    let adminId;
+    let userId;
+    let mapId;
+    let elem1Id;
+    let elem2Id;
+    let spaceId;
+    let ws1;
+    let ws2;
+    let ws1Messages = [];
+    let ws2Messages = [];
+    let userX;
+    let adminX;
+    let userY;
+    let adminY;
+
+    function waitForAndPopLatestMessage(messageArray) {
+        return new Promise(r => {
+            if(messageArray.lenght>0){
+                resolve(messageArray.shift());
+            } else {
+                let interval = setInterval(() => {
+                    if(messageArray.lenght>0){
+                        resolve(messageArray.shift());
+                        clearInterval(interval);
+                    }
+                }, 100)
+            }
+        })
+    }
+
+    async function setUpHttp(){
+        const username = `Prashant-${Math.random()}`;
+        const UserUsername = `Prashant-${Math.random()}`;
+        const password = '12345678';
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username,
+            password,
+            role: 'admin'
+        })
+
+        const adminRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username,
+            password
+        })
+
+        await axios.post(`${BACKEND_URL}/signup`, {
+            username: UserUsername,
+            password,
+            role: 'user'
+        })
+
+        const userRes = await axios.post(`${BACKEND_URL}/signin`, {
+            username: UserUsername,
+            password
+        })
+        
+        adminToken = adminRes.data.token
+        userToken = userRes.data.token
+        adminId = adminRes.data.userId
+        userId = userRes.data.userId
+
+        const elem1Res = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: `chair-1`,
+            width: 2,
+            height: 2,
+            static: false,
+            imageUrl: "https://image.com/chair.png"
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        const elem2Res = await axios.post(`${BACKEND_URL}/admin/element`, {
+            name: `table-1`,
+            width: 5,
+            height: 5,
+            static: true,
+            imageUrl: "https://image.com/chair.png"
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        elem1Id = elem1Res.data.id
+        elem2Id = elem2Res.data.id
+
+        const mapRes = await axios.post(`${BACKEND_URL}/admin/map`, {
+            name: `map-${Math.random()}`,
+            thumbnail: "https://image.com/thumbnail.png",
+            dimensions: "100x200",
+            "defaultElements": [{
+                elementId: elem1Id,
+                x: 20,
+                y: 20,
+            }, {
+                elementId: elem1Id,
+                x: 25,
+                y: 25,
+            }, {
+                elementId: elem2Id,
+                x: 30,
+                y: 30,
+            }]
+        })
+
+        mapId = mapRes.data.id
+
+        const res = await axios.post(`${BACKEND_URL}/space`, {
+            name: `space-${Math.random()}`,
+            dimensions: "100x200",
+            mapId
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
+        })
+
+        spaceId = res.data.id
+    }
+
+    async function setUpWs(){
+        ws1 = new WebSocket(WS_URL);
+
+        await new Promise(r => {
+            ws1.onopen = r
+        })
+
+        ws1.onmessage = (event) => {
+            ws1Messages.push(JSON.parse(event.data))
+        }
+
+        ws2 = new WebSocket(WS_URL);
+
+        await new Promise(r => {
+            ws2.onopen = r
+        })
+
+        ws2.onmessage = (event) => {
+            ws2Messages.push(JSON.parse(event.data))
+        }
+    }
+
+    beforeAll( async() => {
+        await setUpHttp();
+        await setUpWs();
+    })
+
+    test("get back Ack for joining the space", async() => {
+        ws1.send(JSON.stringify({
+            "type": "join",
+            "payload": {
+                "spaceId": spaceId,
+                "token": adminToken
+            }
+        }))
+
+        const message1 = await waitForAndPopLatestMessage(ws1Messages);
+
+        ws2.send(JSON.stringify({
+            "type": "join",
+            "payload": {
+                "spaceId": spaceId,
+                "token": userToken
+            }
+        }))
+
+        const message2 = await waitForAndPopLatestMessage(ws2Messages);
+        const message3 = await waitForAndPopLatestMessage(ws1Messages);
+
+        expect(message1.type).toBe("space-joined");
+        expect(message2.type).toBe("space-joined");
+        expect(message1.payload.users.lenght + message2.payload.users.lenght).toBe(1);
+        expect(message3.type).toBe("user-joined");
+        expect(message3.payload.x).toBe(message2.payload.x)
+        expect(message3.payload.y).toBe(message2.payload.y)
+        expect(message3.payload.userId).toBe(userId)
+
+        adminX = message1.payload.spawn.x
+        adminY = message1.payload.spawn.y
+        userX = message2.payload.spawn.x
+        userY = message2.payload.spawn.y
+    })
+
+    test("user should not be able to move across the boundary of the wall", async() => {
+        ws1.send(JSON.stringify({
+            type: "move",
+            payload: {
+                x: 1000000,
+                y: 200000,
+            }
+        }))
+
+        const message = await waitForAndPopLatestMessage(ws1Messages);
+        expect(message.type).toBe("movement-rejected");
+        expect(message.payload.x).toBe(adminX);
+        expect(message.payload.y).toBe(adminY);
+    })
+
+    test("user should not be able to move 2 blocks at the same time", async() => {
+        ws1.send(JSON.stringify({
+            type: "move",
+            payload: {
+                x: adminX+2,
+                y: adminY,
+            }
+        }))
+
+        const message = await waitForAndPopLatestMessage(ws1Messages);
+        expect(message.type).toBe("movement-rejected");
+        expect(message.payload.x).toBe(adminX);
+        expect(message.payload.y).toBe(adminY);
+    })
+
+    test("Correct movement should be broadcasted to the other users in the room", async() => {
+        ws1.send(JSON.stringify({
+            type: "move",
+            payload: {
+                x: adminX+1,
+                y: adminY,
+                userId: adminId
+            }
+        }))
+
+        const message = await waitForAndPopLatestMessage(ws2Messages);
+        expect(message.type).toBe("movement");
+        expect(message.payload.x).toBe(adminX+1);
+        expect(message.payload.y).toBe(adminY);
+    })
+
+    test("If a user leaves, the other users receives a leave event", async() => {
+        ws1.close();
+
+        const message = await waitForAndPopLatestMessage(ws2Messages);
+        expect(message.type).toBe("user-left");
+        expect(message.payload.userId).toBe(adminId);
+    })
+
 })
