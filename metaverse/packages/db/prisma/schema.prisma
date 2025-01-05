@@ -17,10 +17,10 @@ model User {
 	id         String @id @unique @default(cuid())
 	username   String @unique
 	password   String
-	avatarId   String
+	avatarId   String?
 	role       Role
-  spaces     Space[]
-  avatar     Avatar @relation(fields: [avatarId], references: [id])
+	spaces     Space[]
+	avatar     Avatar? @relation(fields: [avatarId], references: [id])
 }
 
 model Space {
@@ -29,9 +29,9 @@ model Space {
 	width         Int
 	height        Int
 	thumbnail     String
-  creatorId     String
-  creator       User   @relation(fields: [creatorId], references: [id])
-  spaceElements spaceElements[]
+	creatorId     String
+	creator       User   @relation(fields: [creatorId], references: [id])
+	spaceElements spaceElements[]
 }
 
 model spaceElements {
@@ -40,8 +40,8 @@ model spaceElements {
 	spaceId    String
 	x          Int
 	y          Int
-  space      Space   @relation(fields: [spaceId], references: [id])
-  element    Element @relation(fields: [elementId], references: [id])
+	space      Space   @relation(fields: [spaceId], references: [id])
+	element    Element @relation(fields: [elementId], references: [id])
 }
 
 model Element {
@@ -51,8 +51,8 @@ model Element {
 	width       Int
 	ImageUrl    String
 	isStatic    Boolean
-  spaces      spaceElements[]
-  mapElements MapElements[]
+	spaces      spaceElements[]
+	mapElements MapElements[]
 }
 
 model Map {
@@ -61,14 +61,14 @@ model Map {
 	thumbnail  String
 	height     Int
 	width      Int
-  elements   MapElements[]
+  	elements   MapElements[]
 }
 
 model Avatar {
 	id         String @id @unique @default(cuid())
 	name       String
 	imageUrl   String
-  user       User[]
+  	user       User[]
 }
 
 model MapElements {
@@ -77,8 +77,8 @@ model MapElements {
 	mapId      String
 	x          Int
 	y          Int
-  element    Element @relation(fields: [elementId], references: [id])
-  map        Map @relation(fields: [mapId], references: [id])
+	element    Element @relation(fields: [elementId], references: [id])
+	map        Map @relation(fields: [mapId], references: [id])
 }
 
 enum Role {

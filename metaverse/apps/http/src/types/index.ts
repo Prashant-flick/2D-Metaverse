@@ -1,25 +1,26 @@
 import z from "zod"
 
 export const signupSchema = z.object({
-    username: z.string().email(),
+    username: z.string(),
     password: z.string().min(8),
     role: z.enum(["user", "admin"]),
+    avatarId: z.string().optional(),
 })
 
 export const signinSchema = z.object({
-    username: z.string().email(),
+    username: z.string(),
     password: z.string().min(8),
 })
 
 export const updateMetadataSchema = z.object({
     avatar: z.string(),
-    userId: z.number()
+    userId: z.string()
 })
 
 export const createSpaceSchema = z.object({
     name: z.string(),
     dimensions: z.string().regex(/^{0-9}{1,3}x{0-9}{1,3}/),
-    mapId: z.number(),
+    mapId: z.string(),
 })
 
 export const addElementSchema = z.object({

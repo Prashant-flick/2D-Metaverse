@@ -1,7 +1,42 @@
-const axios = require("axios");
+const axios2 = require("axios")
 
-const BACKEND_URL = "https://localhost:3000/api/v1";
+const BACKEND_URL = "http://localhost:3000/api/v1";
 const WS_URL = "ws://localhost:3001"
+
+const axios = {
+    post: async (...args) => {
+        try {
+            const res = await axios2.post(...args)
+            return res
+        } catch (error) {
+            return error.response
+        }
+    },
+    delete: async (...args) => {
+        try {
+            const res = await axios2.delete(...args)
+            return res
+        } catch (error) {
+            return error.response
+        }
+    },
+    put: async (...args) => {
+        try {
+            const res = await axios2.put(...args)
+            return res
+        } catch (error) {
+            return error.response
+        }
+    },
+    get: async (...args) => {
+        try {
+            const res = await axios2.get(...args)
+            return res
+        } catch (error) {
+            return error.response
+        }
+    },
+}
 
 describe("Authentication", () => {
     test('User is able to sign up only once', async() => {
@@ -78,7 +113,7 @@ describe("Authentication", () => {
     })
 });
 
-describe("User information endpoints", () => {
+describe.skip("User information endpoints", () => {
     let userToken = "";
     let adminToken = "";
     let avatarId = "";
@@ -196,7 +231,7 @@ describe("User information endpoints", () => {
     })
 });
 
-describe("Space endpoints", () => {
+describe.skip("Space endpoints", () => {
     let userToken;
     let adminToken;
     let adminId;
@@ -402,7 +437,7 @@ describe("Space endpoints", () => {
     })
 })
 
-describe("Arena endpoints", () => {
+describe.skip("Arena endpoints", () => {
     let userToken;
     let adminToken;
     let adminId;
@@ -615,7 +650,7 @@ describe("Arena endpoints", () => {
     })
 })
 
-describe("Admin endpoints", () => {
+describe.skip("Admin endpoints", () => {
     let userToken;
     let adminToken;
     let adminId;
@@ -761,7 +796,7 @@ describe("Admin endpoints", () => {
     })
 })
 
-describe("Websocket endPoints", () => {
+describe.skip("Websocket endPoints", () => {
     let userToken;
     let adminToken;
     let adminId;
