@@ -761,7 +761,7 @@ describe("Admin endpoints", () => {
     })
 })
 
-describe("Websocket tests", () => {
+describe("Websocket endPoints", () => {
     let userToken;
     let adminToken;
     let adminId;
