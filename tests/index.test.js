@@ -247,7 +247,8 @@ describe.skip("Space endpoints", () => {
     let mapId;
     let elem1Id;
     let elem2Id;
-    let spaceId;
+    let adminSpaceId1;
+    let adminSpaceId2;
 
     beforeAll(async() => {
         const username = `Prashant-${Math.random()}`;
@@ -312,7 +313,7 @@ describe.skip("Space endpoints", () => {
             name: `map-${Math.random()}`,
             thumbnail: "https://image.com/thumbnail.png",
             dimensions: "100x200",
-            "defaultElements": [{
+            defaultElements: [{
                 elementId: elem1Id,
                 x: 20,
                 y: 20,
@@ -325,15 +326,18 @@ describe.skip("Space endpoints", () => {
                 x: 30,
                 y: 30,
             }]
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
         })
 
         mapId = mapRes.data.id
     })
 
-    test("a user can create a space", async() => {
+    test("a user can create a space only using mapId", async() => {        
         const res = await axios.post(`${BACKEND_URL}/space`, {
             name: `space-${Math.random()}`,
-            dimensions: "100x200",
             mapId
         }, {
             headers: {
@@ -341,13 +345,12 @@ describe.skip("Space endpoints", () => {
             }
         })
 
-        spaceId = res.data.id
+        adminSpaceId1 = res.data.id
         expect(res.status).toBe(200);
         expect(res.data.id).toBeDefined();
     })
 
     test("user is able to create a space without mapId (empty space)", async() => {
-
         const res = await axios.post(`${BACKEND_URL}/space`, {
             name: `space-${Math.random()}`,
             dimensions: "100x200",
@@ -359,6 +362,8 @@ describe.skip("Space endpoints", () => {
 
         expect(res.status).toBe(200);
         expect(res.data.id).toBeDefined();
+
+        adminSpaceId2 = res.data.id
     })
 
     test("user is not able to create a space without mapId and dimensions", async() => {
@@ -384,18 +389,8 @@ describe.skip("Space endpoints", () => {
         expect(res.status).toBe(400);
     })
 
-    test("user should be able to delete a space which exist", async() => {
-        const res = await axios.delete(`${BACKEND_URL}/space/${spaceId}`, {
-            headers: {
-                Authorization: `Bearer ${adminToken}`
-            }
-        })
-
-        expect(res.status).toBe(200);
-    })
-
     test("user should not be able to delete a space created by another user", async() => {
-        const deleteSpaceRes = await axios.delete(`${BACKEND_URL}/space/${spaceId}`, {
+        const deleteSpaceRes = await axios.delete(`${BACKEND_URL}/space/${adminSpaceId1}`, {
             headers: {
                 Authorization: `Bearer ${userToken}`
             }
@@ -404,26 +399,17 @@ describe.skip("Space endpoints", () => {
         expect(deleteSpaceRes.status).toBe(403)
     })
 
-    test("get my existing spaces", async() => {
-        const userSpacesRes = await axios.get(`${BACKEND_URL}/space/all`, {
-            headers: {
-                Authorization: `Bearer ${userToken}`
-            }
-        })
-
-        const adminSpacesRes = await axios.get(`${BACKEND_URL}/space/all`, {
+    test("user should be able to delete a space which exist", async() => {
+        const res = await axios.delete(`${BACKEND_URL}/space/${adminSpaceId1}`, {
             headers: {
                 Authorization: `Bearer ${adminToken}`
             }
         })
-
-        expect(userSpacesRes.status).toBe(200);
-        expect(adminSpacesRes.status).toBe(200);
-        expect(adminSpacesRes.data.spaces.length).not.toBe(0);
-        expect(userSpacesRes.data.spaces.length).toBe(0);
+        
+        expect(res.status).toBe(200);
     })
 
-    test("get my existing spaces", async() => {
+    test("get my existing spaces", async() => {        
         const userSpacesRes = await axios.get(`${BACKEND_URL}/space/all`, {
             headers: {
                 Authorization: `Bearer ${userToken}`
@@ -438,10 +424,10 @@ describe.skip("Space endpoints", () => {
 
         expect(userSpacesRes.status).toBe(200);
         expect(adminSpacesRes.status).toBe(200);
-        expect(adminSpacesRes.data.spaces.length).not.toBe(0);
-        const filteredSpace = adminSpacesRes.data.spaceId.find(x => x.id === spaceId)
-        expect(filteredSpace).toBeDefined();
+        expect(adminSpacesRes.data.spaces.length).toBe(1);
         expect(userSpacesRes.data.spaces.length).toBe(0);
+        const filteredSpace = adminSpacesRes.data.spaces.find(x => x.id === adminSpaceId2)
+        expect(filteredSpace).toBeDefined();
     })
 })
 

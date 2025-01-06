@@ -19,8 +19,8 @@ export const updateMetadataSchema = z.object({
 
 export const createSpaceSchema = z.object({
     name: z.string(),
-    dimensions: z.string().regex(/^{0-9}{1,3}x{0-9}{1,3}/),
-    mapId: z.string(),
+    dimensions: z.string().regex(/^\d{1,3}x\d{1,3}$/).optional(),
+    mapId: z.string().optional(),
 })
 
 export const addElementSchema = z.object({
@@ -35,6 +35,7 @@ export const createElementSchema = z.object({
     width: z.number(),
     height: z.number(),
     static: z.boolean(),
+    name: z.string(),
 })
 
 export const updateElementSchema = z.object({
@@ -49,7 +50,7 @@ export const createAvatarSchema = z.object({
 export const createMapSchema = z.object({
     thumbnail: z.string(),
     name: z.string(),
-    dimensions: z.string().regex(/^{0-9}{1,3}x{0-9}{1,3}/),
+    dimensions: z.string().regex(/^\d{1,3}x\d{1,3}$/),
     defaultElements: z.array(z.object({
         elementId: z.string(),
         x: z.number(),
@@ -61,7 +62,7 @@ declare global {
     namespace Express {
         export interface Request {
             role?: "Admin" | "User";
-            userId?: string;
+            userId: string;
         }
     }
 }

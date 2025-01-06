@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken"
 
-export const userMiddleware = async(req: Request, res: Response, next:NextFunction) => {
+export const userMiddleware = async(req: Request, res: Response, next:NextFunction) => {    
     const header = req.headers.authorization;
     const token = header?.split(' ')[1];
 
