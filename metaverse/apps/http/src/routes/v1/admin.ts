@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createAvatarSchema, createElementSchema, createMapSchema } from "../../types";
+import { createAvatarSchema, createElementSchema, createMapSchema, updateElementSchema } from "../../types";
 import client from "@repo/db/client"
 import { adminMiddleware } from "../../middleware/admin";
 
@@ -36,7 +36,34 @@ adminRouter.post("/element", async(req, res) => {
 })
 
 adminRouter.put("/element/:elementId", async(req, res) => {
+    const parsedData = updateElementSchema.safeParse(req.body);
+    const elementId = req.params.elementId as string;
 
+    if (!parsedData.success) {
+        res.status(400).json({
+            message: "type validation failed"
+        })
+        return;
+    }
+
+    try {
+        await client.element.update({
+            where: {
+                id: elementId
+            },
+            data: {
+                ImageUrl: parsedData.data.imageUrl
+            }
+        })
+
+        res.status(200).json({
+            message: "element updation succeeds"
+        })
+    } catch (error) {
+        res.status(400).json({
+            message: "element updation failed"
+        })
+    }
 })
 
 adminRouter.post("/avatar", async(req, res) => {

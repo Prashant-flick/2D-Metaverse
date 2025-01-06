@@ -643,7 +643,7 @@ describe.skip("Arena endpoints", () => {
     })
 })
 
-describe.skip("Admin endpoints", () => {
+describe("Admin endpoints", () => {
     let userToken;
     let adminToken;
     let adminId;
@@ -686,10 +686,10 @@ describe.skip("Admin endpoints", () => {
     test("only admin should be able to create an element", async()=> {
         const res = await axios.post(`${BACKEND_URL}/admin/element`, {
             name: "chair1",
-            widht: 10,
+            width: 10,
             height: 10,
             static: false,
-            "imageUrl": "https://image.com/chair3.png",
+            imageUrl: "https://image.com/chair3.png",
         }, {
             headers: {
                 Authorization: `Bearer ${adminToken}`
@@ -698,10 +698,10 @@ describe.skip("Admin endpoints", () => {
 
         const newRes = await axios.post(`${BACKEND_URL}/admin/element`, {
             name: "chair1",
-            widht: 10,
+            width: 10,
             height: 10,
             static: false,
-            "imageUrl": "https://image.com/chair3.png",
+            imageUrl: "https://image.com/chair3.png",
         }, {
             headers: {
                 Authorization: `Bearer ${userToken}`
@@ -724,6 +724,7 @@ describe.skip("Admin endpoints", () => {
                 Authorization: `Bearer ${adminToken}`
             }
         })
+
         const newRes = await axios.put(`${BACKEND_URL}/admin/element/${elemId}`, {
             "imageUrl": "https://image.com/chair5.png",
         }, {
