@@ -13,7 +13,7 @@ export const signinSchema = z.object({
 })
 
 export const updateMetadataSchema = z.object({
-    avatar: z.string(),
+    avatarId: z.string(),
     userId: z.string()
 })
 
@@ -56,3 +56,12 @@ export const createMapSchema = z.object({
         y: z.number(),
     }))
 })
+
+declare global {
+    namespace Express {
+        export interface Request {
+            role?: "Admin" | "User";
+            userId?: string;
+        }
+    }
+}

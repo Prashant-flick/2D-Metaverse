@@ -5,7 +5,7 @@ import { spaceRouter } from "./space";
 import { signinSchema, signupSchema } from "../../types";
 import client from "@repo/db/client";
 import jwt from "jsonwebtoken";
-// import bcrypt from "bcrypt"
+import { userMiddleware } from "../../middleware/user";
 
 export const router = Router();
 
@@ -18,7 +18,6 @@ router.post("/signup", async(req, res) => {
     }
     
     try {
-        console.log("here1", parsedData);
         const user = await client.user.create({
             data: {
                 username: parsedData.data.username,
@@ -30,22 +29,17 @@ router.post("/signup", async(req, res) => {
         res.status(200).json({
             userId: user.id
         }) 
-    } catch (error) {
-        console.log(error);
-        
+    } catch (error) {        
         res.status(400).json({ message: "user already exists"});
     }
 })
 
-router.post("/signin", async(req,res) => {
-    console.log("signin", req.body);
-    
+router.post("/signin", async(req,res) => {    
     const parsedData = signinSchema.safeParse(req.body);
     if(!parsedData.success){
         res.status(403).json({message: "Validation failed"})
         return
     }
-    console.log("signin", parsedData);
 
     try {
         const user = await client.user.findUnique({
@@ -53,8 +47,6 @@ router.post("/signin", async(req,res) => {
                 username: parsedData.data.username
             }
         })
-
-        console.log("signin user", user);
 
         if (!user) {
             res.status(403).json({ message: "user Doesn't exist"});
@@ -73,7 +65,8 @@ router.post("/signin", async(req,res) => {
         }, process.env.JWT_PASSWORD || "HELLO")
 
         res.status(200).json({
-            token
+            token,
+            userId: user.id
         })
     } catch (error) {
         res.status(400).json({
@@ -82,12 +75,24 @@ router.post("/signin", async(req,res) => {
     }
 })
 
-router.get("/elements", async(req, res) => {
+router.get("/elements", userMiddleware, async(req, res) => {
 
 })
 
-router.get("/avatars", async(req, res) => {
+router.get("/avatars", userMiddleware, async(req, res) => {
+    try {
+        const avatarsRes = await client.avatar.findMany();
 
+        res.status(200).json({
+            avatars: avatarsRes.map(m => ({
+                id: m.id,
+                imageUrl: m.imageUrl,
+                name: m.name
+            }))
+        })
+    } catch (error) {
+        res.status(400).json({ message: "getting all avatars failed"})   
+    }
 })
 
 router.use("/user", userRouter);

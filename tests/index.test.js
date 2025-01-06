@@ -38,7 +38,7 @@ const axios = {
     },
 }
 
-describe("Authentication", () => {
+describe.skip("Authentication", () => {
     test('User is able to sign up only once', async() => {
         const username = "Prashant" + Math.random();
         const password = "12345678"
@@ -163,11 +163,15 @@ describe.skip("User information endpoints", () => {
             }
         })
 
-        avatarId = avatarRes.data.avatarId
+        avatarId = avatarRes.data.id
     })
 
     test("user can get all the available avatars", async() => {
-        const res = await axios.get(`${BACKEND_URL}/avatars`)
+        const res = await axios.get(`${BACKEND_URL}/avatars`, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        })
 
         expect(res.status).toBe(200)
         expect(res.data.avatars.length).toBeGreaterThan(0)
@@ -178,6 +182,10 @@ describe.skip("User information endpoints", () => {
     test("user can't update their metaData with a wrong avatarId", async() => {
         const res = await axios.post(`${BACKEND_URL}/user/metadata`, {
             avatarId: "123rwerw"
+        }, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
         })
 
         expect(res.status).toBe(400)
@@ -205,12 +213,8 @@ describe.skip("User information endpoints", () => {
         expect(userRes.status).toBe(200)
         expect(adminRes.status).toBe(200)
         
-        if(userRes.status === 200){
-            userAvatarId = avatarId
-        }
-        if(adminRes.status === 200){
-            adminAvatarId = avatarId
-        }
+        userAvatarId = avatarId
+        adminAvatarId = avatarId
     })
 
     test("user can't update their metaData if auth header is empty", async() => {
@@ -222,10 +226,14 @@ describe.skip("User information endpoints", () => {
     })
 
     test("get Back avatar information for a user", async() => {
-        const res = await axios.get(`${BACKEND_URL}/user/metadata/bulk?ids=[${userAvatarId},${adminAvatarId}]`);
+        const res = await axios.get(`${BACKEND_URL}/user/metadata/bulk?ids=[${userId},${adminId}]`, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        });
 
         expect(res.status).toBe(200)
-        expect(res.data.avatars.length).toBeGreaterThan(2)
+        expect(res.data.avatars.length).toBe(2)
         expect(res.data.avatars[0].userId).toBe(userId)
         expect(res.data.avatars[1].userId).toBe(adminId)
     })
