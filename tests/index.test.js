@@ -518,6 +518,10 @@ describe.skip("Arena endpoints", () => {
                 x: 30,
                 y: 30,
             }]
+        }, {
+            headers: {
+                Authorization: `Bearer ${adminToken}`
+            }
         })
 
         mapId = mapRes.data.id
@@ -535,7 +539,7 @@ describe.skip("Arena endpoints", () => {
         spaceId = spaceRes.data.id
     })
 
-    test("cant get back a space with invalid space id", async() => {
+    test("can't get back a space with invalid space id", async() => {
         const res = await axios.get(`${BACKEND_URL}/space/incorrectSpaceId`, {
             headers: {
                 Authorization: `Bearer ${adminToken}`
@@ -552,17 +556,14 @@ describe.skip("Arena endpoints", () => {
             }
         })
 
-        arenaElem1 = res.data.element[0].id;
+        arenaElem1 = res.data.elements[0].id;
         expect(res.status).toBe(200);
         expect(res.data.dimensions).toBe("100x200");
         expect(res.data.elements.length).toBe(3);
     })
 
-    test("Delete endpoint is able to delete an element", async() => {
-        const res = await axios.delete(`${BACKEND_URL}/space/element`, {
-            spaceId,
-            elementId: arenaElem1,
-        }, {
+    test("user should be able to delete an element", async() => {
+        const res = await axios.delete(`${BACKEND_URL}/space/element/${arenaElem1}`, {
             headers: {
                 Authorization: `Bearer ${adminToken}`
             }
@@ -570,31 +571,24 @@ describe.skip("Arena endpoints", () => {
 
         expect(res.status).toBe(200);
 
-        const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`)
-
-        expect(newRes.status).toBe(200);
-        expect(newRes.data.elements.lenght).toBe(2);
-    })
-
-    test("Delete endpoint should not be able to delete an element with wrong spaceid or elementid", async() => {
-        const res1 = await axios.delete(`${BACKEND_URL}/space/element`, {
-            spaceId,
-        }, {
+        const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`, {
             headers: {
-                Authorization: `Bearer ${adminToken}`
+                Authorization: `Bearer ${userToken}`
             }
         })
 
-        const res2 = await axios.delete(`${BACKEND_URL}/space/element`, {
-            elementId: arenaElem1,
-        }, {
+        expect(newRes.status).toBe(200);
+        expect(newRes.data.elements.length).toBe(2);
+    })
+
+    test("User should not be able to delete an element with wrong elementid", async() => {
+        const res1 = await axios.delete(`${BACKEND_URL}/space/element/elemnet12432`, {
             headers: {
                 Authorization: `Bearer ${adminToken}`
             }
         })
 
         expect(res1.status).toBe(400);
-        expect(res2.status).toBe(400);
     })
 
     test("user can add an element to a space", async() => {
@@ -612,10 +606,14 @@ describe.skip("Arena endpoints", () => {
         expect(res.status).toBe(200);
         expect(res.data.id).toBeDefined;
 
-        const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`);
+        const newRes = await axios.get(`${BACKEND_URL}/space/${spaceId}`, {
+            headers: {
+                Authorization: `Bearer ${userToken}`
+            }
+        });
 
         expect(newRes.status).toBe(200);
-        expect(newRes.data.elements.lenght).toBe(3);
+        expect(newRes.data.elements.length).toBe(3);
     })
 
     test("user can not add an element to a space with wrong dimensions", async() => {
@@ -633,7 +631,7 @@ describe.skip("Arena endpoints", () => {
         expect(res.status).toBe(400);
     })
 
-    test("user can see all the available elements which can we added to the arena", async() => {
+    test("user can see all the available elements which can be added to the arena", async() => {
         const res = await axios.get(`${BACKEND_URL}/elements`, {
             headers: {
                 Authorization: `Bearer ${adminToken}`
@@ -641,6 +639,7 @@ describe.skip("Arena endpoints", () => {
         })
 
         expect(res.status).toBe(200);
+        expect(res.data.elements.lenght).not.toBe(0);
     })
 })
 

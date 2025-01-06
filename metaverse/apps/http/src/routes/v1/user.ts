@@ -4,8 +4,9 @@ import { updateMetadataSchema } from "../../types";
 import client from "@repo/db/client"
 
 export const userRouter = Router();
+userRouter.use(userMiddleware);
 
-userRouter.post("/metadata", userMiddleware, async(req, res) => {
+userRouter.post("/metadata", async(req, res) => {
     const parsedData = updateMetadataSchema.safeParse(req.body);
     if(!parsedData.success){
         res.status(400).json({ message: "type validation failed" });
@@ -30,7 +31,7 @@ userRouter.post("/metadata", userMiddleware, async(req, res) => {
     }
 })
 
-userRouter.get("/metadata/bulk", userMiddleware, async(req, res) => {
+userRouter.get("/metadata/bulk", async(req, res) => {
     const userIdsRes = (req.query.ids) as string;
     const userIds: string[] = userIdsRes.substring(1,userIdsRes.length-1).split(",");    
   

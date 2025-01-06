@@ -76,7 +76,22 @@ router.post("/signin", async(req,res) => {
 })
 
 router.get("/elements", userMiddleware, async(req, res) => {
+    try {
+        const elemRes = await client.element.findMany();
 
+        res.status(200).json({
+            elements: elemRes.map(e => ({
+                id: e.id,
+                imageUrl: e.ImageUrl,
+                width: e.width,
+                height: e.height,
+            }))
+        })
+    } catch (error) {
+        res.status(400).json({
+            message: "getting elements failed"
+        })
+    }
 })
 
 router.get("/avatars", userMiddleware, async(req, res) => {
