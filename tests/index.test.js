@@ -1,4 +1,5 @@
-const axios2 = require("axios")
+const axios2 = require("axios");
+const WebSocket = require("ws");
 
 const BACKEND_URL = "http://localhost:3000/api/v1";
 const WS_URL = "ws://localhost:3001"
@@ -38,7 +39,7 @@ const axios = {
     },
 }
 
-describe.skip("Authentication", () => {
+describe("Authentication", () => {
     test('User is able to sign up only once', async() => {
         const username = "Prashant" + Math.random();
         const password = "12345678"
@@ -113,7 +114,7 @@ describe.skip("Authentication", () => {
     })
 });
 
-describe.skip("User information endpoints", () => {
+describe("User information endpoints", () => {
     let userToken = "";
     let adminToken = "";
     let avatarId = "";
@@ -239,7 +240,7 @@ describe.skip("User information endpoints", () => {
     })
 });
 
-describe.skip("Space endpoints", () => {
+describe("Space endpoints", () => {
     let userToken;
     let adminToken;
     let adminId;
@@ -431,7 +432,7 @@ describe.skip("Space endpoints", () => {
     })
 })
 
-describe.skip("Arena endpoints", () => {
+describe("Arena endpoints", () => {
     let userToken;
     let adminToken;
     let adminId;
@@ -790,7 +791,7 @@ describe("Admin endpoints", () => {
     })
 })
 
-describe.skip("Websocket endPoints", () => {
+describe("Websocket endPoints", () => {
     let userToken;
     let adminToken;
     let adminId;
@@ -808,14 +809,14 @@ describe.skip("Websocket endPoints", () => {
     let userY;
     let adminY;
 
-    function waitForAndPopLatestMessage(messageArray) {
+    function waitForAndPopLatestMessage(messageArray) {        
         return new Promise(r => {
-            if(messageArray.lenght>0){
-                resolve(messageArray.shift());
+            if(messageArray.length>0){
+                r(messageArray.shift());
             } else {
                 let interval = setInterval(() => {
-                    if(messageArray.lenght>0){
-                        resolve(messageArray.shift());
+                    if(messageArray.length>0){
+                        r(messageArray.shift());
                         clearInterval(interval);
                     }
                 }, 100)
@@ -953,7 +954,7 @@ describe.skip("Websocket endPoints", () => {
         }))
 
         const message1 = await waitForAndPopLatestMessage(ws1Messages);
-
+        
         ws2.send(JSON.stringify({
             "type": "join",
             "payload": {
@@ -963,14 +964,15 @@ describe.skip("Websocket endPoints", () => {
         }))
 
         const message2 = await waitForAndPopLatestMessage(ws2Messages);
+        
         const message3 = await waitForAndPopLatestMessage(ws1Messages);
 
         expect(message1.type).toBe("space-joined");
         expect(message2.type).toBe("space-joined");
-        expect(message1.payload.users.lenght + message2.payload.users.lenght).toBe(1);
+        expect(message1.payload.users.length + message2.payload.users.length).toBe(1);
         expect(message3.type).toBe("user-joined");
-        expect(message3.payload.x).toBe(message2.payload.x)
-        expect(message3.payload.y).toBe(message2.payload.y)
+        expect(message3.payload.x).toBe(message2.payload.spawn.x)
+        expect(message3.payload.y).toBe(message2.payload.spawn.y)
         expect(message3.payload.userId).toBe(userId)
 
         adminX = message1.payload.spawn.x
@@ -989,6 +991,7 @@ describe.skip("Websocket endPoints", () => {
         }))
 
         const message = await waitForAndPopLatestMessage(ws1Messages);
+        
         expect(message.type).toBe("movement-rejected");
         expect(message.payload.x).toBe(adminX);
         expect(message.payload.y).toBe(adminY);
@@ -1020,7 +1023,7 @@ describe.skip("Websocket endPoints", () => {
         }))
 
         const message = await waitForAndPopLatestMessage(ws2Messages);
-        expect(message.type).toBe("movement");
+        expect(message.type).toBe("move");
         expect(message.payload.x).toBe(adminX+1);
         expect(message.payload.y).toBe(adminY);
     })
