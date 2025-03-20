@@ -13,7 +13,9 @@ function App() {
   useEffect(() => {
     if (!isLogin) {
       const refreshToken = async() => {
-        const res = await axios.post(`${BackendUrl}/refresh`)
+        const res = await axios.post(`${BackendUrl}/refresh`, {}, {
+          withCredentials: true,
+        })
         if (res.status !== 200) {
           return;
         }
@@ -21,7 +23,7 @@ function App() {
       }
       refreshToken();
     }
-  })
+  },[])
 
   return (
     <Router>

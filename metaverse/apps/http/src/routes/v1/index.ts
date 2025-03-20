@@ -4,14 +4,14 @@ import { adminRouter } from "./admin";
 import { spaceRouter } from "./space";
 import { signinSchema, signupSchema } from "../../types";
 import client from "@repo/db/client";
-import jwt, {VerifyErrors, JwtPayload} from "jsonwebtoken";
+import jwt, {JwtPayload} from "jsonwebtoken";
 import bcrypt from "bcryptjs"
 import { userMiddleware } from "../../middleware/user";
 
 export const router = Router();
 
 router.post('/refresh', async(req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
     res.status(401).json({
       message: "refresh Token Expired"
@@ -110,7 +110,7 @@ router.post("/signin", async(req,res) => {
 
         res.cookie('refreshToken', refreshToken, {
           httpOnly: true,
-          // secure: true,
+          secure: process.env.NODE_ENV==='production',
           sameSite: 'strict',
           path: '/',
         });

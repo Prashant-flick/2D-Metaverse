@@ -31,7 +31,9 @@ const GatherTownAuth = () => {
     }
 
     try {
-      const res = await axios.post(`${BackendUrl}/signin`,formData)
+      const res = await axios.post(`${BackendUrl}/signin`,formData,{
+        withCredentials: true
+      })
       if (res.status!==200) {
           console.error("signin failed", res);
           return
