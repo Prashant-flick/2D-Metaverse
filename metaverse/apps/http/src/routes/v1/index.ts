@@ -4,12 +4,38 @@ import { adminRouter } from "./admin";
 import { spaceRouter } from "./space";
 import { signinSchema, signupSchema } from "../../types";
 import client from "@repo/db/client";
-import jwt from "jsonwebtoken";
+import jwt, {VerifyErrors, JwtPayload} from "jsonwebtoken";
+import bcrypt from "bcryptjs"
 import { userMiddleware } from "../../middleware/user";
 
 export const router = Router();
 
-router.post("/signup", async(req, res) => {    
+router.post('/refresh', async(req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    res.status(401).json({
+      message: "refresh Token Expired"
+    })
+    return;
+  }
+
+  interface DecodedUser extends JwtPayload {
+    id: string;
+    role: 'Admin' | 'User';
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || "HELLO") as DecodedUser;
+    const accessToken = generateAccessToken({ id: decoded.id, role: decoded.role });
+    res.status(200).json({ accessToken });
+  } catch (err) {
+    res.status(403).json({
+      message: "jwt verification failed"
+    });
+  }
+})
+
+router.post("/signup", async(req, res) => {
     const parsedData = signupSchema.safeParse(req.body);
     
     if(!parsedData.success){
@@ -18,23 +44,42 @@ router.post("/signup", async(req, res) => {
     }
     
     try {
+        const checkemailAndUsername = await client.user.findFirst({
+            where: {
+                OR: [
+                    { email: parsedData.data.email },
+                    { username: parsedData.data.username }
+                ]
+            }
+        })
+
+        if (checkemailAndUsername) {
+            res.status(403).json({
+                message: "user already exists"
+            })
+            return
+        }
+
+        const hashedPassword = bcrypt.hashSync(parsedData.data.password, parseInt(process.env.BCRYPT_SECRET || "HEHE"));
+        
         const user = await client.user.create({
             data: {
+                email: parsedData.data.email,
                 username: parsedData.data.username,
-                password: parsedData.data.password,
+                password: hashedPassword,
                 role: parsedData.data.role === "admin" ? "Admin" : "User",
             }
-        })        
-        
+        })
+
         res.status(200).json({
             userId: user.id
         }) 
     } catch (error) {        
-        res.status(400).json({ message: "user already exists"});
+        res.status(404).json({ message: "axios error"});
     }
 })
 
-router.post("/signin", async(req,res) => {    
+router.post("/signin", async(req,res) => {
     const parsedData = signinSchema.safeParse(req.body);
     if(!parsedData.success){
         res.status(403).json({message: "Validation failed"})
@@ -44,7 +89,7 @@ router.post("/signin", async(req,res) => {
     try {
         const user = await client.user.findUnique({
             where: {
-                username: parsedData.data.username
+                email: parsedData.data.email
             }
         })
 
@@ -53,19 +98,25 @@ router.post("/signin", async(req,res) => {
             return
         }
 
-        const verifyPassword = parsedData.data.password === user.password ? true : false;
+        const verifyPassword = bcrypt.compareSync(parsedData.data.password, user.password)
+        
         if(!verifyPassword){
             res.status(403).json({ message: "Invalid Password"});
             return
         }
 
-        const token = jwt.sign({
-            userId: user.id,
-            role: user.role
-        }, process.env.JWT_PASSWORD || "HELLO")
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          // secure: true,
+          sameSite: 'strict',
+          path: '/',
+        });
 
         res.status(200).json({
-            token,
+            accessToken,
             userId: user.id
         })
     } catch (error) {
@@ -109,6 +160,28 @@ router.get("/avatars", userMiddleware, async(req, res) => {
         res.status(400).json({ message: "getting all avatars failed"})   
     }
 })
+
+const generateAccessToken = (user: { id: string, role: 'Admin' | 'User' }) => {
+    const token = jwt.sign({
+      userId: user.id,
+      role: user.role
+    }, process.env.ACCESS_TOKEN_SECRET || "HELLO",
+    {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+    })
+    return token;
+}
+
+const generateRefreshToken = (user: { id: string, role: 'Admin' | 'User' }) => {
+  const token = jwt.sign({
+    userId: user.id,
+    role: user.role
+  }, process.env.REFRESH_TOKEN_SECRET || "HELLO",
+  {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+  })
+  return token;
+}
 
 router.use("/user", userRouter);
 router.use("/admin", adminRouter);
