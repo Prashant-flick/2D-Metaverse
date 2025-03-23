@@ -21,13 +21,13 @@ router.post('/refresh', async(req, res) => {
   }
 
   interface DecodedUser extends JwtPayload {
-    id: string;
+    userId: string;
     role: 'Admin' | 'User';
   }
 
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || "HELLO") as DecodedUser;
-    const accessToken = generateAccessToken({ id: decoded.id, role: decoded.role });
+    const accessToken = generateAccessToken({ id: decoded.userId, role: decoded.role });
     res.status(200).json({ accessToken });
   } catch (err) {
     res.status(403).json({

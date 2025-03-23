@@ -1,22 +1,48 @@
-import { useState } from 'react';
-import { ArrowRight, Users, Calendar, Building, Video, Globe } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, Calendar, Building, Video, Globe } from 'lucide-react';
 import { useAuth } from '../Context/UseAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import { axios } from '../Axios/axios';
+import { config } from '../config'
+
+interface userSpaceProps{
+  id: string,
+  name: string,
+  dimensions: string,
+  thumbnail: string
+}
 
 const GatherTownAppLanding = () => {  
   const [spaceCode, setSpaceCode] = useState('');
-  const { isLogin, logout } = useAuth();
+  const { logout, accessToken } = useAuth();
   const [isNewSpaceFormOpen, setIsNewSpaceFormOpen] = useState<boolean>(false);
-  
   const navigate = useNavigate();
+  const [userSpaces, setUserSpaces] = useState<[] | userSpaceProps[]>()
+
+  useEffect(() => {
+    const findspaces = async() => {
+      try {
+        const res = await axios.get(`${config.BackendUrl}/space/all`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        })
+
+        setUserSpaces(res.data.spaces);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    findspaces();
+  }, [accessToken])
+
   const [newSpaceData, setNewSpaceData] = useState({
     spaceId: "",
     name: "",
-    x: "",
-    y: "",
+    x: 100,
+    y: 100,
+    dimensions: "",
     thumbnail: "/thumbnail_empty_space",
-    creatorId: "",
   });
 
   const logOut = async(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -43,7 +69,32 @@ const GatherTownAppLanding = () => {
 
   const handleCreateSpace = async(e: React.MouseEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const newSpaceId = getRandomString(5);
+    try {
+      const newSpaceId = getRandomString(5);
+      newSpaceData.spaceId = newSpaceId;
+      newSpaceData.thumbnail = "thumbnail1";
+      if( !newSpaceData.name || !newSpaceData.thumbnail || !newSpaceData.x || !newSpaceData.y ) {
+        console.error("all feilds are required");
+        return;
+      }
+      newSpaceData.dimensions = newSpaceData.x.toString() + 'x' + newSpaceData.y.toString();
+      
+      const res = await axios.post(`${config.BackendUrl}/space`, newSpaceData , {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      
+      if (res.status === 200) {
+        navigate(`/app/space/${res.data.id}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  const handleJoinSpace = (spaceId: string) => {
+    navigate(`/app/space/${spaceId}`);
   }
 
   return (
@@ -158,6 +209,10 @@ const GatherTownAppLanding = () => {
               <button 
                 className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center"
                 disabled={!spaceCode}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleJoinSpace(spaceCode);
+                }}
               >
                 Join Space <ArrowRight className="ml-2 h-4 w-4" />
               </button>
@@ -166,27 +221,20 @@ const GatherTownAppLanding = () => {
 
           {/* Recent Spaces */}
           <div className={`rounded-xl shadow-md p-6 mb-8 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
-            <h2 className="text-xl font-semibold mb-4">Recent Spaces</h2>
+            <h2 className="text-xl font-semibold mb-4">My Spaces</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { name: "Team Workspace", type: "Work", users: 12, lastVisited: "2 hours ago" },
-                { name: "Project Alpha", type: "Meeting", users: 5, lastVisited: "Yesterday" },
-                { name: "Virtual Office", type: "Office", users: 24, lastVisited: "3 days ago" }
-              ].map((space, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all cursor-pointer">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-medium">{space.name}</h3>
-                      <p className="text-sm text-gray-500">{space.type}</p>
-                    </div>
-                    <div className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
-                      <div className="flex items-center">
-                        <Users size={12} className="mr-1" />
-                        {space.users}
-                      </div>
-                    </div>
+            {
+              userSpaces && userSpaces.length && userSpaces.map((space, index) => (
+                <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleJoinSpace(space.id);
+                  }}
+                  key={index} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all cursor-pointer">
+                  <div className="flex flex-col justify-between items-center">
+                    <img className='mb-2' src={space.thumbnail==='thumbnail1'?'/thumbnail_empty_space.jpg':''} alt="NO thumbnail found" />
+                    <h1 className='text-xl font-semibold'>{space.name}</h1>
                   </div>
-                  <div className="text-xs text-gray-500">Last visited: {space.lastVisited}</div>
                 </div>
               ))}
             </div>

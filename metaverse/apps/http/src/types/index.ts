@@ -23,6 +23,7 @@ export const createSpaceSchema = z.object({
     name: z.string(),
     dimensions: z.string().regex(/^\d{1,3}x\d{1,3}$/).optional(),
     mapId: z.string().optional(),
+    thumbnail: z.string().optional(),
 })
 
 export const addElementSchema = z.object({

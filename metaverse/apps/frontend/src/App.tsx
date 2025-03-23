@@ -30,9 +30,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<GatherTownHomepage />} />
-        <Route path="/app" element={<GatherTownAppLanding />}>
-          <Route path="space/:spaceId" element={<EmptySpace />} />
-        </Route>
+        <Route path="/app" element={<GatherTownAppLanding />} />
+        <Route path="/app/space/:spaceId" element={<EmptySpace />} />
         <Route path="/login" element={<GatherTownAuth/>} />
         <Route path="/signup" element={<GatherTownAuth/>} />
         <Route path="*" element={<Navigate to="/" replace />} />

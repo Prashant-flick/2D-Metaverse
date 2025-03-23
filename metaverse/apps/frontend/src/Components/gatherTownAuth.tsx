@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import { axios } from '../Axios/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../Context/UseAuth';
 
 const GatherTownAuth = () => {
@@ -70,7 +70,7 @@ const GatherTownAuth = () => {
   };
 
   const toggleView = () => {
-    setLoginOrSingupPage(!setLoginOrSingupPage);
+    setLoginOrSingupPage(prev => !prev);
     setShowPassword(false);
   };
 
@@ -79,7 +79,7 @@ const GatherTownAuth = () => {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="text-2xl font-bold text-indigo-600">gather</div>
+          <Link to='/' className="text-2xl font-bold text-indigo-600 cursor-pointer">gather</Link>
         </div>
       </header>
 
@@ -88,10 +88,10 @@ const GatherTownAuth = () => {
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-gray-900">
-              {isLogin ? 'Sign in to your account' : 'Create your account'}
+              {loginOrSignupPage ? 'Sign in to your account' : 'Create your account'}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              {isLogin ? 'Enter your details to access your spaces' : 'Start building your virtual spaces'}
+              {loginOrSignupPage ? 'Enter your details to access your spaces' : 'Start building your virtual spaces'}
             </p>
           </div>
 
@@ -107,7 +107,7 @@ const GatherTownAuth = () => {
                       id="username"
                       name="username"
                       type="text"
-                      required={!isLogin}
+                      required={!loginOrSignupPage}
                       value={formData.username}
                       onChange={handleChange}
                       className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -143,7 +143,7 @@ const GatherTownAuth = () => {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    autoComplete={loginOrSignupPage ? "current-password" : "new-password"}
                     required
                     value={formData.password}
                     onChange={handleChange}
@@ -169,7 +169,7 @@ const GatherTownAuth = () => {
                       id="confirmPassword"
                       name="confirmPassword"
                       type={showPassword ? "text" : "password"}
-                      required={!isLogin}
+                      required={!loginOrSignupPage}
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -178,7 +178,7 @@ const GatherTownAuth = () => {
                 </div>
               )}
 
-              {isLogin && (
+              {loginOrSignupPage && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <input
@@ -205,7 +205,7 @@ const GatherTownAuth = () => {
                   type="submit"
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  {isLogin ? (
+                  {loginOrSignupPage ? (
                     <>
                       Sign in <LogIn size={16} className="ml-2" />
                     </>
@@ -234,7 +234,7 @@ const GatherTownAuth = () => {
                   className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   <img src="/api/placeholder/20/20" alt="Google" className="h-5 w-5 mr-2" />
-                  {isLogin ? 'Sign in with Google' : 'Sign up with Google'}
+                  {loginOrSignupPage ? 'Sign in with Google' : 'Sign up with Google'}
                 </button>
               </div>
             </div>
@@ -242,13 +242,13 @@ const GatherTownAuth = () => {
 
           <div className="text-center mt-4">
             <p className="text-sm text-gray-600">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
+              {loginOrSignupPage ? "Don't have an account?" : "Already have an account?"}
               <button
                 type="button"
                 onClick={toggleView}
-                className="ml-1 font-medium text-indigo-600 hover:text-indigo-500"
+                className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
               >
-                {isLogin ? 'Sign up' : 'Sign in'}
+                {loginOrSignupPage ? 'Sign up' : 'Sign in'}
               </button>
             </p>
           </div>

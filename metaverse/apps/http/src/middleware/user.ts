@@ -11,7 +11,7 @@ export const userMiddleware = async(req: Request, res: Response, next:NextFuncti
     }
 
     try {
-        const decodedToken = jwt.verify(token, process.env.JWT_PASSWORD || "HELLO") as {role: string, userId: string};
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || "HELLO") as {role: string, userId: string};
         req.userId = decodedToken.userId
         next();
     } catch (error) {

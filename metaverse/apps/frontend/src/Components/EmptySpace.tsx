@@ -4,7 +4,7 @@ import ws from '../Utils/WsClient';
 
 const EmptySpace: React.FC = () => {
   const gameRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,

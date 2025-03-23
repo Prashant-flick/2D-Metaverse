@@ -131,7 +131,7 @@ spaceRouter.post("/", async(req, res) => {
                     name: parsedData.data.name,
                     dimensions: parsedData.data.dimensions,
                     creatorId: req.userId,
-                    thumbnail: "https://image.com/thumbnail.png",
+                    thumbnail: parsedData.data.thumbnail || '',
                 }
             })
 
