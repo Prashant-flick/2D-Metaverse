@@ -15,7 +15,10 @@
     "@repo/db": "workspace:*",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/ws": "^8.5.13",
+    "dotenv": "^16.4.7",
+    "esbuild": "^0.25.1",
     "jsonwebtoken": "^9.0.2",
+    "typescript": "^5.8.2",
     "ws": "^8.18.0"
   }
 }

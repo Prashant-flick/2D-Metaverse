@@ -5,15 +5,16 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { axios } from './Axios/axios'
 import { useEffect } from "react";
 import { useAuth } from "./Context/UseAuth";
+import { config }  from './config'
+import EmptySpace from "./Components/EmptySpace";
 
 function App() {
   const { isLogin, SetAccessToken } = useAuth();
-  const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     if (!isLogin) {
       const refreshToken = async() => {
-        const res = await axios.post(`${BackendUrl}/refresh`, {}, {
+        const res = await axios.post(`${config.BackendUrl}/refresh`, {}, {
           withCredentials: true,
         })
         if (res.status !== 200) {
@@ -29,7 +30,9 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<GatherTownHomepage />} />
-        <Route path="/app" element={<GatherTownAppLanding />} />
+        <Route path="/app" element={<GatherTownAppLanding />}>
+          <Route path="space/:spaceId" element={<EmptySpace />} />
+        </Route>
         <Route path="/login" element={<GatherTownAuth/>} />
         <Route path="/signup" element={<GatherTownAuth/>} />
         <Route path="*" element={<Navigate to="/" replace />} />

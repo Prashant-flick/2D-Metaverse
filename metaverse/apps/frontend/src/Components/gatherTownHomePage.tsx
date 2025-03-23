@@ -1,18 +1,27 @@
 import { ArrowRight, Users, Video, Globe, Monitor, CheckCircle } from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate  } from 'react-router-dom';
+import { useNavigate, Link  } from 'react-router-dom';
+import { useAuth } from '../Context/UseAuth';
+import { useEffect } from 'react';
 
 const GatherTownHomepage = () => {
-  const [isLoggedIn, setIsloggedIn] = useState<boolean>(false)
-
+  const { isLogin } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const FirstVisit = sessionStorage.getItem('firstVisit');
+
+    if (!FirstVisit && isLogin) {
+      sessionStorage.setItem('firstVisit', 'true');
+      navigate('/app', { replace: true });
+    }
+  },[isLogin, navigate])
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navigation */}
       <nav className="flex justify-between items-center px-6 py-4 bg-white">
         <div className="flex items-center">
-          <div className="text-2xl font-bold text-indigo-600">gather</div>
+          <Link to="/" className="text-2xl font-bold text-indigo-600">gather</Link>
         </div>
         <div className="hidden md:flex items-center space-x-6">
           <a href="#" className="text-gray-600 hover:text-indigo-600">Product</a>
@@ -21,7 +30,7 @@ const GatherTownHomepage = () => {
           <a href="#" className="text-gray-600 hover:text-indigo-600">About</a>
         </div>
         <div className="flex items-center space-x-4">
-          <button className="text-gray-600 hover:text-indigo-600">Sign in</button>
+          <Link to="/login" className="text-gray-600 hover:text-indigo-600">Sign in</Link>
           <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Try Gather</button>
         </div>
       </nav>
@@ -42,7 +51,7 @@ const GatherTownHomepage = () => {
                 <button
                   onClick={(e) => {
                     e.preventDefault()
-                    navigate(`${isLoggedIn?"/app":"/login"}`)
+                    navigate(`${isLogin?"/app":"/login"}`)
                   }}
                   className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 flex items-center justify-center">
                     Get Started <ArrowRight className="ml-2 h-4 w-4" />

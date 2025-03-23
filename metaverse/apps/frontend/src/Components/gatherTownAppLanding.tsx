@@ -1,30 +1,142 @@
 import { useState } from 'react';
 import { ArrowRight, Users, Calendar, Building, Video, Globe } from 'lucide-react';
 import { useAuth } from '../Context/UseAuth';
+import { useNavigate, Link } from 'react-router-dom';
+import { axios } from '../Axios/axios';
 
-const GatherTownAppLanding = () => {
+const GatherTownAppLanding = () => {  
   const [spaceCode, setSpaceCode] = useState('');
-  const { isLogin } = useAuth();
-  console.log(isLogin);
+  const { isLogin, logout } = useAuth();
+  const [isNewSpaceFormOpen, setIsNewSpaceFormOpen] = useState<boolean>(false);
+  
+  const navigate = useNavigate();
+  const [newSpaceData, setNewSpaceData] = useState({
+    spaceId: "",
+    name: "",
+    x: "",
+    y: "",
+    thumbnail: "/thumbnail_empty_space",
+    creatorId: "",
+  });
+
+  const logOut = async(e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    await logout();
+    navigate('/')
+  };
+
+  const getRandomString = (length: number) => {
+    const characters = "QWREYTOYJLDJSBCMSMZshdfirutowenxvcvnbnzmc1234567890";
+
+    let result = "";
+    for (let i=0; i<length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+
+    return result;
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewSpaceData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateSpace = async(e: React.MouseEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const newSpaceId = getRandomString(5);
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className={`min-h-screen bg-gray-50 flex flex-col ${isNewSpaceFormOpen && 'bg-gray-200'}`}>
+      {isNewSpaceFormOpen && (
+      <div
+        onClick={() => setIsNewSpaceFormOpen(prev=>!prev)}
+        className='fixed h-screen w-screen flex justify-center items-center'>
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="relative bg-white w-96 p-6 shadow-lg rounded-lg">
+          <button
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer p-1"
+            onClick={() => setIsNewSpaceFormOpen(false)}
+          >
+            ✕
+          </button>
+          <form onSubmit={handleCreateSpace}>
+            <div className="mb-4">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={newSpaceData.name}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Dimensions</label>
+              <div className="flex gap-2 mt-1">
+                <input
+                  id="x-dimension"
+                  name="x"
+                  type="number"
+                  min="100"
+                  max="800"
+                  required
+                  value={newSpaceData.x}
+                  onChange={handleChange}
+                  className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Width (x)"
+                />
+                <input
+                  id="y-dimension"
+                  name="y"
+                  type="number"
+                  min="100"
+                  max="800"
+                  required
+                  value={newSpaceData.y}
+                  onChange={handleChange}
+                  className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Height (y)"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+            >
+              Create Space
+            </button>
+          </form>
+        </div>
+      </div>
+      )}
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className={`shadow-sm ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            <div className="text-2xl font-bold text-indigo-600">gather</div>
+            <Link to="/" className="text-2xl font-bold text-indigo-600">gather</Link>
           </div>
           <div className="flex items-center space-x-4">
             <button className="text-gray-600 hover:text-indigo-600">Help</button>
             <button className="text-gray-600 hover:text-indigo-600">Account</button>
-            <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Sign Out</button>
+            <button
+              onClick={logOut}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                Sign Out
+            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow flex flex-col">
+      <main className={`flex-grow flex flex-col`}>
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 flex-grow flex flex-col">
           {/* Welcome Section */}
           <div className="text-center mb-8">
@@ -33,7 +145,7 @@ const GatherTownAppLanding = () => {
           </div>
 
           {/* Join Section */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <div className={`rounded-xl shadow-md p-6 mb-8 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
             <h2 className="text-xl font-semibold mb-4">Join a Space</h2>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
               <input
@@ -53,7 +165,7 @@ const GatherTownAppLanding = () => {
           </div>
 
           {/* Recent Spaces */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <div className={`rounded-xl shadow-md p-6 mb-8 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
             <h2 className="text-xl font-semibold mb-4">Recent Spaces</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
@@ -82,14 +194,16 @@ const GatherTownAppLanding = () => {
 
           {/* Templates & Create Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-md p-6">
+            <div className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
               <h2 className="text-xl font-semibold mb-4">Create New Space</h2>
               <p className="text-gray-600 mb-4">Build your own custom virtual space from scratch</p>
-              <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 w-full">
+              <button
+                onClick={()=>setIsNewSpaceFormOpen(prev=>!prev)}
+                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 w-full cursor-pointer">
                 Create Custom Space
               </button>
             </div>
-            <div className="bg-white rounded-xl shadow-md p-6">
+            <div className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
               <h2 className="text-xl font-semibold mb-4">Use a Template</h2>
               <p className="text-gray-600 mb-4">Get started quickly with pre-designed spaces</p>
               <button className="bg-indigo-100 text-indigo-700 px-6 py-2 rounded-lg hover:bg-indigo-200 w-full">
@@ -99,7 +213,7 @@ const GatherTownAppLanding = () => {
           </div>
 
           {/* Templates Grid */}
-          <div className="bg-white rounded-xl shadow-md p-6">
+          <div className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
             <h2 className="text-xl font-semibold mb-4">Popular Templates</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[

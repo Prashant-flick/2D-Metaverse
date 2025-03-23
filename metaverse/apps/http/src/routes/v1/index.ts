@@ -12,6 +12,7 @@ export const router = Router();
 
 router.post('/refresh', async(req, res) => {
   const refreshToken = req.cookies?.refreshToken;
+  
   if (!refreshToken) {
     res.status(401).json({
       message: "refresh Token Expired"
@@ -124,6 +125,19 @@ router.post("/signin", async(req,res) => {
             message: "signin error"
         })
     }
+})
+
+router.post("/signout", async(req, res) => {
+  res.clearCookie('refreshToken', {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV==='production',
+  });
+
+  res.status(200).json({
+    message: "signout succeeded"
+  })
 })
 
 router.get("/elements", userMiddleware, async(req, res) => {

@@ -1,13 +1,15 @@
 import React, { useState, ReactNode } from 'react';
+import { AuthContext } from './UseAuth';
+import { axios } from '../Axios/axios';
+import { config } from '../config';
 
 export interface AuthContextType {
   isLogin: boolean;
   accessToken: string | null,
   SetAccessToken: (accesstoken: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  removeAccessToken: () => void;
 }
-
-import { AuthContext } from './UseAuth';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -19,10 +21,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [tokenTimeout, setTokenTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const login = () => setIsLogin(true);
-  const logout = () => {
-    setIsLogin(false);
-    setAccessToken(null)
-    if (tokenTimeout) clearTimeout(tokenTimeout);
+  const logout = async() => {
+    try {
+      await axios.post(`${config.BackendUrl}/signout`, {}, {
+        withCredentials: true
+      });
+      setIsLogin(false);
+      setAccessToken(null);
+      if (tokenTimeout) clearTimeout(tokenTimeout);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  const removeAccessToken = () => {
+    setAccessToken(null);
   }
   
   const SetAccessToken = (accesstoken: string, expiryTime: number = 15 * 60 * 1000) => {
@@ -32,14 +44,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (tokenTimeout) clearTimeout(tokenTimeout);
 
     const timeout = setTimeout(() => {
-      logout();
+      removeAccessToken();
     }, expiryTime);
 
     setTokenTimeout(timeout);
   }
 
   return (
-    <AuthContext.Provider value={{ isLogin, accessToken, SetAccessToken, logout }}>
+    <AuthContext.Provider value={{ isLogin, accessToken, SetAccessToken, logout, removeAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

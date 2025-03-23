@@ -46,7 +46,7 @@ export class User {
                     }
 
                     const token = parsedData.payload.token;
-                    const userId = (jwt.verify(token, "HELLO") as JwtPayload).userId;
+                    const userId = (jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || "HELLO") as JwtPayload).userId;
                     if (!userId) {
                         this.ws.close();
                         return;
