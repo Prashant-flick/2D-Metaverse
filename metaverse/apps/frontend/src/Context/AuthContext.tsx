@@ -4,9 +4,10 @@ import { axios } from '../Axios/axios';
 import { config } from '../config';
 
 export interface AuthContextType {
+  userId: string | null,
   isLogin: boolean;
   accessToken: string | null,
-  SetAccessToken: (accesstoken: string) => void;
+  SetAccessToken: (accesstoken: string, expiryTime: number, userId:string) => void;
   logout: () => Promise<void>;
   removeAccessToken: () => void;
 }
@@ -19,6 +20,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const [accessToken, setAccessToken] = useState<string|null>(null);
   const [tokenTimeout, setTokenTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [userId, setUserId] = useState<string|null>(null);
 
   const login = () => setIsLogin(true);
   const logout = async() => {
@@ -28,6 +30,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       setIsLogin(false);
       setAccessToken(null);
+      setUserId(null);
       if (tokenTimeout) clearTimeout(tokenTimeout);
     } catch (error) {
       console.error(error);
@@ -37,8 +40,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAccessToken(null);
   }
   
-  const SetAccessToken = (accesstoken: string, expiryTime: number = 15 * 60 * 1000) => {
+  const SetAccessToken = (accesstoken: string, expiryTime: number = 15 * 60 * 1000, userId: string) => {
     setAccessToken(accesstoken);
+    setUserId(userId);
     login();
 
     if (tokenTimeout) clearTimeout(tokenTimeout);
@@ -51,7 +55,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ isLogin, accessToken, SetAccessToken, logout, removeAccessToken }}>
+    <AuthContext.Provider value={{ isLogin, accessToken, SetAccessToken, logout, removeAccessToken, userId }}>
       {children}
     </AuthContext.Provider>
   );

@@ -14,10 +14,16 @@ interface userSpaceProps{
 
 const GatherTownAppLanding = () => {  
   const [spaceCode, setSpaceCode] = useState('');
-  const { logout, accessToken } = useAuth();
+  const { logout, accessToken, isLogin } = useAuth();
   const [isNewSpaceFormOpen, setIsNewSpaceFormOpen] = useState<boolean>(false);
   const navigate = useNavigate();
   const [userSpaces, setUserSpaces] = useState<[] | userSpaceProps[]>()
+
+  useEffect(() => {
+    if (!isLogin) {
+      navigate('/');
+    }
+  },[isLogin, navigate])
 
   useEffect(() => {
     const findspaces = async() => {

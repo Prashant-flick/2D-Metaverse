@@ -64,14 +64,19 @@ export class User {
                                 y: this.y,
                             },
                             users: RoomManager.getInstance().rooms.get(spaceId)?.filter((u) => u.id !== this.id)
-                            .map((u) => u.id) ?? []
+                            .map((u) => ({
+                                id: u.id,
+                                userId: u.userId,
+                                x: u.x,
+                                y: u.y
+                            })) ?? []
                         }
                     });
 
                     RoomManager.getInstance().broadcast({
                         type: "user-joined",
+                        userId: this.userId,
                         payload: {
-                            userId: this.userId,
                             x: this.x,
                             y: this.y
                         }
@@ -81,13 +86,14 @@ export class User {
                 case "move":
                     const moveX = Number(parsedData.payload.x);
                     const moveY = Number(parsedData.payload.y);
-
-                    if ((Math.abs(this.x-moveX) + Math.abs(this.y-moveY))===1) {
+                    
+                    if ((Math.abs(this.x-moveX) + Math.abs(this.y-moveY))<=7) {
                         this.x = moveX;
                         this.y = moveY;
                         
                         RoomManager.getInstance().broadcast({
                             type: "move",
+                            userId: this.userId,
                             payload: {
                                 x: this.x,
                                 y: this.y
@@ -96,6 +102,7 @@ export class User {
                     } else {
                         this.send({
                             type: "movement-rejected",
+                            userId: this.userId,
                             payload: {
                                 x: this.x,
                                 y: this.y

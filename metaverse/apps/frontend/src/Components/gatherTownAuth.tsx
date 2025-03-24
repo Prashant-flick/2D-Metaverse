@@ -15,7 +15,7 @@ const GatherTownAuth = () => {
     role: 'user',
   });
   const navigate = useNavigate();
-  const { isLogin, SetAccessToken } = useAuth();
+  const { SetAccessToken } = useAuth();
 
   const BackendUrl = import.meta.env.VITE_BACKEND_URL;
 

@@ -20,7 +20,7 @@ function App() {
         if (res.status !== 200) {
           return;
         }
-        SetAccessToken(res.data.accessToken)
+        SetAccessToken(res.data.accessToken, 15*60*1000 , res.data.userId)
       }
       refreshToken();
     }
