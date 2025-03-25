@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
-import ws from '../Utils/WsClient';
+import ws,{wss} from '../Utils/WsClient';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../Context/UseAuth';
 import { axios } from '../Axios/axios';
@@ -34,6 +34,8 @@ const EmptySpace: React.FC = () => {
   const { accessToken } = useAuth();
   const [space, setSpace] = useState<spaceProps|null>(null);
   const { loading, showLoader, hideLoader }  = useLoader();
+  const peer = useRef<RTCPeerConnection>(null);
+  const [myStream, setMyStream] = useState<MediaStream|null>(null);
  
   useEffect(() => {
     const getSpace = async() => {
@@ -63,11 +65,18 @@ const EmptySpace: React.FC = () => {
     }
     getSpace();
   }, [accessToken])
+
   
   useEffect(() => {
     if (isValidSpaceId) {
       const spacex = Number(space?.dimensions?.split("x")[0]);
       const spacey = Number(space?.dimensions?.split("x")[1]);
+      
+      peer.current = new RTCPeerConnection({
+        iceServers: [{
+          urls: "stun:stun.l.google.com:19302",
+        }]
+      })
 
       const config: Phaser.Types.Core.GameConfig = {
         type: Phaser.AUTO,
@@ -119,7 +128,7 @@ const EmptySpace: React.FC = () => {
         graphics.strokePath();
       }
   
-      function create(this: Phaser.Scene) {
+      async function create(this: Phaser.Scene) {
         drawGrid(this);
         if (space && space.spaceElements && space.spaceElements.length) {
           space.spaceElements.map(spaceElem => {
@@ -129,6 +138,15 @@ const EmptySpace: React.FC = () => {
         if (this.input.keyboard) {
           cursors = this.input.keyboard.createCursorKeys();
         }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true
+        })
+        setMyStream(stream);
+
+        stream.getTracks().forEach(track => {
+          peer.current?.addTrack(track, stream);
+        })
 
         ws.send(
           JSON.stringify({
@@ -140,20 +158,71 @@ const EmptySpace: React.FC = () => {
           })
         );
 
-        ws.onmessage = (event) => {
+        wss.onmessage = async(event) => {
           const data = JSON.parse(event.data);
+          switch(data.type){
+            case 'user-joined':
+              await peer.current?.setRemoteDescription(new RTCSessionDescription(data.payload.sdp));
+              break;
+            case 'renegotiate': {
+              await peer.current?.setRemoteDescription(new RTCSessionDescription(data.payload.sdp));
+              const answer = await peer.current?.createAnswer();
+              await peer.current?.setLocalDescription(answer);
+              wss.send(JSON.stringify({
+                type: 'renegotiateAnswer',
+                payload: {
+                  sdp: answer
+                }
+              }))
+              break;
+            }
+            default:
+              console.error('wrong message type');
+              break;
+          }
+        }
+
+        ws.onmessage = async(event) => {
+          const data = JSON.parse(event.data);
+          let offer: RTCSessionDescriptionInit | undefined;
           switch (data.type) {
             case 'space-joined':
+              offer = await peer.current?.createOffer();
+              await peer.current?.setLocalDescription(offer);
+              wss.send(JSON.stringify({
+                type: 'join',
+                payload: {
+                  token: accessToken,
+                  spaceId: spaceId,
+                  x: data.payload.spawn.x,
+                  y: data.payload.spawn.y,
+                  sdp: offer,
+                }
+              }))
               addMe(this, data.payload.spawn.x, data.payload.spawn.y, data.payload.users);
               break;
             case 'user-joined':
-              addOtherPlayer(data.userId, data.payload.x, data.payload.y, this);
+              addOtherPlayer(data.payload.userId, data.payload.x, data.payload.y, this);
               break;
             case 'move':
-              updatePlayerPosition(data.userId, data.payload.x, data.payload.y);
+              updatePlayerPosition(data.payload.userId, data.payload.x, data.payload.y);
               break;
             case 'user-left':
-              removeOtherPlayer(data.userId);
+              removeOtherPlayer(data.payload.userId);
+              break;
+            case 'move-success':
+              wss.send(
+                JSON.stringify({
+                  type: 'move',
+                  payload: {
+                    x: data.payload.x,
+                    y: data.payload.y,
+                  }
+                })
+              )
+              break;
+            default:
+              console.error("wrong message type");
               break;
           }
         };
@@ -174,6 +243,7 @@ const EmptySpace: React.FC = () => {
   
       function update(this: Phaser.Scene) {
         if (player) {
+          player.setVelocity(0);
           let moved = false;
   
           if (cursors?.left?.isDown) {
@@ -196,7 +266,6 @@ const EmptySpace: React.FC = () => {
             player.setVelocityY(0);
           }
 
-          
           if (moved) {
             ws.send(
               JSON.stringify({
@@ -213,6 +282,8 @@ const EmptySpace: React.FC = () => {
   
       function addOtherPlayer(id: string, x: number, y: number, scene: Phaser.Scene) {
         const otherPlayer = scene.physics.add.sprite(x, y, 'avatar').setScale(0.2);
+        scene.physics.add.collider(player, otherPlayer);
+        otherPlayer.setImmovable(true);
         otherPlayers.set(id, otherPlayer);
       }
   

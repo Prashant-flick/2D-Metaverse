@@ -75,8 +75,8 @@ export class User {
 
                     RoomManager.getInstance().broadcast({
                         type: "user-joined",
-                        userId: this.userId,
                         payload: {
+                            userId: this.userId,
                             x: this.x,
                             y: this.y
                         }
@@ -87,23 +87,32 @@ export class User {
                     const moveX = Number(parsedData.payload.x);
                     const moveY = Number(parsedData.payload.y);
                     
-                    if ((Math.abs(this.x-moveX) + Math.abs(this.y-moveY))<=7) {
+                    if ((Math.abs(this.x-moveX) + Math.abs(this.y-moveY))<=10) {
                         this.x = moveX;
                         this.y = moveY;
                         
                         RoomManager.getInstance().broadcast({
                             type: "move",
-                            userId: this.userId,
                             payload: {
+                                userId: this.userId,
                                 x: this.x,
                                 y: this.y
                             }
                         }, this, this.spaceId!);
+
+                        this.send({
+                            type: 'move-success',
+                            payload: {
+                                userId: this.userId,
+                                x: this.x,
+                                y: this.y
+                            }
+                        })
                     } else {
                         this.send({
                             type: "movement-rejected",
-                            userId: this.userId,
                             payload: {
+                                userId: this.userId,
                                 x: this.x,
                                 y: this.y
                             }
@@ -117,7 +126,7 @@ export class User {
         RoomManager.getInstance().broadcast({
             type: "user-left",
             payload: {
-                userId: this.userId
+                userId: this.userId,
             }
         }, this, this.spaceId!);
         RoomManager.getInstance().removeUser(this, this.spaceId!);
