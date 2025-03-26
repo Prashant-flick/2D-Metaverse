@@ -3,19 +3,22 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx esbuild src/index.ts --bundle --outfile=dist/index.js --platform=node --tsconfig=tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "npm run build && npm start"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@repo/db": "workspace:*",
+    "@roamhq/wrtc": "^0.8.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/ws": "^8.5.13",
     "dotenv": "^16.4.7",
-    "es": "^0.8.0",
     "esbuild": "^0.25.1",
     "jsonwebtoken": "^9.0.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "ws": "^8.18.0"
   }
 }

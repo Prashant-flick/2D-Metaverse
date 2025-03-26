@@ -1,7 +1,8 @@
 import WebSocket from "ws";
-import client from "@repo/db/client";
+// import client from "@repo/db/client";
 import jwt,{JwtPayload} from 'jsonwebtoken'
 import { RoomManager } from "./RoomManager";
+import { RTCPeerConnection, RTCSessionDescription } from "@roamhq/wrtc";
 
 const getRandomString = (length: number) => {
   const characters = "QWREYTOYJLDJSBCMSMZshdfirutowenxvcvnbnzmc1234567890";
@@ -38,7 +39,21 @@ export class User{
 
     this.peer.ontrack = (event) => {
       if (event.streams && event.streams.length) {
+        event.streams[0].getTracks().forEach(track => {
+        })
+        
         this.myStream = event.streams[0];
+      }
+    }
+
+    this.peer.onicecandidate = (event) => {
+      if (event.candidate) {
+        this.send({
+          type: 'ice-candidate',
+          payload: {
+            candidate: event.candidate
+          }
+        })
       }
     }
 
@@ -51,16 +66,16 @@ export class User{
       switch(parsedData.type) {
         case 'join':
           const spaceId = parsedData.payload.spaceId;
-          const res = await client.space.findUnique({
-              where: {
-                  id: spaceId
-              }
-          })
+          // const res = await client.space.findUnique({
+          //     where: {
+          //         id: spaceId
+          //     }
+          // })
 
-          if (!res) {
-            this.ws.close();
-            return;
-          }
+          // if (!res) {
+          //   this.ws.close();
+          //   return;
+          // }
           
           const userId = (jwt.verify(parsedData.payload.token, process.env.ACCESS_TOKEN_SECRET || "HELLO") as JwtPayload).userId
           if (!userId) {
@@ -88,13 +103,18 @@ export class User{
 
           this.x = moveX;
           this.y = moveY;
-          RoomManager.getInstance().checkUserCloseBy(this, spaceId!);
+          RoomManager.getInstance().checkUserCloseBy(this, this.spaceId!);
           break;
         case 'renegotiateAnswer':
           this.peer?.setRemoteDescription(new RTCSessionDescription(parsedData.payload.sdp));
           break;
+        case 'ice-candidate':
+          if (parsedData.payload.candidate) {
+            this.peer?.addIceCandidate(parsedData.payload.candidate);
+          }
+          break;
         default:
-          console.log("wrong message type after parsing data");
+          console.log("wrong message type after parsing data", parsedData.type);
           break;
       }
     })
@@ -120,6 +140,12 @@ export class User{
 
   destroy(){
     RoomManager.getInstance().removeUser(this.spaceId!, this);
+    RoomManager.getInstance().broadcast({
+      type: 'user-left',
+      payload: {
+        userStreamId: this.myStream?.id
+      }
+    }, this.spaceId!, this)
   }
 
   send(payload: outGoingMessage){
