@@ -53,12 +53,12 @@ export class User {
                     }
                     this.userId = userId;
                     this.spaceId = spaceId;
-                    const spacex = Math.floor(Number((Number(spaceRes?.dimensions?.split("x")[0]))/32))*32;
-                    const spacey = Math.floor(Number((Number(spaceRes?.dimensions?.split("x")[1]))/32))*32;
-                    this.x = (Math.floor((Math.floor(Math.random() * spacex))/32))*32;
-                    this.x += this.x===0 ? 16 : -16;
-                    this.y = (Math.floor((Math.floor(Math.random() * spacey))/32))*32;
-                    this.y += this.y===0 ? 16 : -16;
+                    const spacex = Math.floor(Number((Number(spaceRes?.dimensions?.split("x")[0]))/64))*64;
+                    const spacey = Math.floor(Number((Number(spaceRes?.dimensions?.split("x")[1]))/64))*64;
+                    this.x = (Math.floor((Math.floor(Math.random() * spacex))/64))*64;
+                    this.x += this.x===0 ? 32 : -32;
+                    this.y = (Math.floor((Math.floor(Math.random() * spacey))/64))*64;
+                    this.y += this.y===0 ? 32 : -32;
                     RoomManager.getInstance().addUser(spaceId, this);
                     this.send({
                         type: "space-joined",
@@ -90,7 +90,8 @@ export class User {
                 case "move":
                     const moveX = Number(parsedData.payload.x);
                     const moveY = Number(parsedData.payload.y);
-                    if ((Math.abs(this.x-moveX) + Math.abs(this.y-moveY))==32) {
+                    
+                    if ((Math.abs(this.x-moveX) + Math.abs(this.y-moveY))==64) {
                         this.x = moveX;
                         this.y = moveY;
                         

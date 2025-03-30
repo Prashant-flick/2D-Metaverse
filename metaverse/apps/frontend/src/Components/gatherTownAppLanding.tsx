@@ -45,8 +45,8 @@ const GatherTownAppLanding = () => {
   const [newSpaceData, setNewSpaceData] = useState({
     spaceId: "",
     name: "",
-    x: 100,
-    y: 100,
+    x: 200,
+    y: 200,
     dimensions: "",
     thumbnail: "/thumbnail_empty_space",
   });
@@ -75,6 +75,7 @@ const GatherTownAppLanding = () => {
 
   const handleCreateSpace = async(e: React.MouseEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
     try {
       const newSpaceId = getRandomString(5);
       newSpaceData.spaceId = newSpaceId;
@@ -141,8 +142,8 @@ const GatherTownAppLanding = () => {
                   id="x-dimension"
                   name="x"
                   type="number"
-                  min="100"
-                  max="800"
+                  min="200"
+                  max="2000"
                   required
                   value={newSpaceData.x}
                   onChange={handleChange}
@@ -153,8 +154,8 @@ const GatherTownAppLanding = () => {
                   id="y-dimension"
                   name="y"
                   type="number"
-                  min="100"
-                  max="800"
+                  min="200"
+                  max="2000"
                   required
                   value={newSpaceData.y}
                   onChange={handleChange}
@@ -166,7 +167,7 @@ const GatherTownAppLanding = () => {
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 cursor-pointer"
             >
               Create Space
             </button>

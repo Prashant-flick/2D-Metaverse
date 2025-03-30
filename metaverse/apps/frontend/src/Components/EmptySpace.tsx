@@ -125,8 +125,8 @@ const EmptySpace: React.FC = () => {
   useEffect(() => {
     const init = async() => {
       if (isValidSpaceId) {
-        const spacex: number = Math.floor(Number((Number(space?.dimensions?.split("x")[0]))/32))*32;
-        const spacey: number = Math.floor(Number((Number(space?.dimensions?.split("x")[1]))/32))*32;
+        const spacex: number = Math.floor(Number((Number(space?.dimensions?.split("x")[0]))/64))*64;
+        const spacey: number = Math.floor(Number((Number(space?.dimensions?.split("x")[1]))/64))*64;
   
         await createPeer();
   
@@ -152,19 +152,33 @@ const EmptySpace: React.FC = () => {
         const game = new Phaser.Game(config);
     
         let player: Phaser.Physics.Arcade.Sprite;
-        let cursors: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
         const otherPlayers = new Map<string, Phaser.Physics.Arcade.Sprite>;
     
         function preload(this: Phaser.Scene) {
           this.load.atlas(
-            'avatar1',
-            '/assets/avatar1.png',
-            '/assets/avatar1.json'
+            'avatar1-front',
+            '/assets/avatar1-front.png',
+            '/assets/avatar1-front.json'
+          );
+          this.load.atlas(
+            'avatar1-back',
+            '/assets/avatar1-back.png',
+            '/assets/avatar1-back.json'
+          );
+          this.load.atlas(
+            'avatar1-right',
+            '/assets/avatar1-right.png',
+            '/assets/avatar1-right.json'
+          );
+          this.load.atlas(
+            'avatar1-left',
+            '/assets/avatar1-left.png',
+            '/assets/avatar1-left.json'
           );
         }
   
         function drawGrid(scene: Phaser.Scene) {
-          const gridSize = 32;
+          const gridSize = 64;
           const graphics = scene.add.graphics();
           graphics.lineStyle(0.5, 0xaaaaaa, 0.1);
         
@@ -187,9 +201,6 @@ const EmptySpace: React.FC = () => {
             space.spaceElements.map(spaceElem => {
               this.add.image(spaceElem.x, spaceElem.y, 'table').setScale(0.2);
             })
-          }
-          if (this.input.keyboard) {
-            cursors = this.input.keyboard.createCursorKeys();
           }
   
           ws.send(
@@ -286,25 +297,34 @@ const EmptySpace: React.FC = () => {
 
           updateMove(this);
         }
-  
-        function addMe(scene: Phaser.Scene, x: number, y: number, users: otherUserProps[]){
-          player = scene.physics.add.sprite(x, y, 'avatar1');
-          player.setCollideWorldBounds(true);
-          player.x=x;
-          player.y=y;
 
+        function addAnimation(scene: Phaser.Scene, key: string, name: string, prefix: string, suffix: string, start: number, end: number){
           scene.anims.create({
-            key: 'walk',
-            frames: scene.anims.generateFrameNames('avatar1', {
-              prefix: 'Sprite-0005 #Tag ',
-              start: 0,
-              end: 5,
-              suffix: '.aseprite',
+            key,
+            frames: scene.anims.generateFrameNames(name, {
+              prefix,
+              start,
+              end,
+              suffix,
               zeroPad: 0,
             }),
             frameRate: 10,
             repeat: -1,
-          });
+          })
+        }
+  
+        function addMe(scene: Phaser.Scene, x: number, y: number, users: otherUserProps[]){
+          player = scene.physics.add.sprite(x, y, 'avatar1-front')
+          .setSize(64, 64)
+          .setOrigin(0.5)
+          .setCollideWorldBounds(true);
+          player.x=x;
+          player.y=y;
+
+          addAnimation(scene, 'front-walk', 'avatar1-front', 'Sprite-0005-enlarge #Tag ', '.aseprite', 0, 5);
+          addAnimation(scene, 'back-walk', 'avatar1-back', 'Sprite-0008-back-side #Tag ', '.aseprite', 0, 5);
+          addAnimation(scene, 'left-walk', 'avatar1-left', 'Sprite-0007-left-side #Tag ', '.aseprite', 0, 4);
+          addAnimation(scene, 'right-walk', 'avatar1-right', 'Sprite-0006-right-side #Tag ', '.aseprite', 0, 4);
   
           scene.cameras.main.startFollow(player);
           
@@ -314,59 +334,103 @@ const EmptySpace: React.FC = () => {
             })
           }
         }
+
+        function setMovementforPlayer(player: Phaser.Physics.Arcade.Sprite, direction: string){
+          if (player.anims.isPlaying) {
+            return;
+          } 
+          switch(direction){
+            case 'left':
+              player.play('left-walk', true);
+              player.setFrame('Sprite-0007-left-side #Tag 1.aseprite');
+              break;
+            case 'right':
+              player.play('right-walk', true);
+              player.setFrame('Sprite-0006-right-side #Tag 1.aseprite');
+              break;
+            case 'up':
+              player.play('back-walk', true);
+              player.setFrame('Sprite-0008-back-side #Tag 1.aseprite');
+              break;
+            case 'down':
+              player.play('front-walk', true);
+              player.setFrame('Sprite-0005-enlarge #Tag 1.aseprite');
+              break;
+            default:
+              console.log('wrong direction');
+              break;
+          }
+        }
     
         function updateMove(scene: Phaser.Scene) {
-          const stepSize = 32;
+          const stepSize = 64;
           let moving = false;
           let moveInterval: NodeJS.Timeout | null = null;
           let targetX = 0;
           let targetY = 0;
-        
+
           scene.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
             if (moving) return;
+            
             targetX = player.x;
             targetY = player.y;
         
             const direction = getDirection(event.key);
+            
             if (direction) {
+              if (!movePlayer(direction) ) return;
               moving = true;
-
               moveInterval = setInterval(() => {
-                movePlayer(direction);
+                if (!movePlayer(direction)) {
+                  clearInterval(moveInterval!);
+                  moveInterval=null;
+                }
               }, 100);
             }
           });
         
           scene.input.keyboard?.on('keyup', () => {
-            moving = false;
+            moving=false;
             if (moveInterval) {
               clearInterval(moveInterval);
               moveInterval=null;
             }
-            player.stop();
+            if (player) {
+              player.stop();
+              player.setFrame(0);
+            }
           });
         
           function getDirection(key: string) {
             switch (key) {
               case 'ArrowLeft':
-                return { x: -stepSize, y: 0 };
+                return { x: -stepSize, y: 0, direction: 'left'};
               case 'ArrowRight':
-                return { x: stepSize, y: 0 };
+                return { x: stepSize, y: 0, direction: 'right'};
               case 'ArrowUp':
-                return { x: 0, y: -stepSize };
+                return { x: 0, y: -stepSize, direction: 'up'};
               case 'ArrowDown':
-                return { x: 0, y: stepSize };
+                return { x: 0, y: stepSize, direction: 'down'};
               default:
                 return null;
             }
           }
         
-          function movePlayer(direction: {x: number, y: number}) {
+          function movePlayer(direction: {x: number, y: number, direction: string}) {
             targetX += direction.x;
             targetY += direction.y;
-        
-            player.play('walk', true);
 
+            let isCollision: boolean = false;
+            otherPlayers.forEach(otherPlayer => {
+              if (otherPlayer.x === targetX && otherPlayer.y===targetY) {
+                isCollision=true;
+              }
+            })
+
+            if (isCollision) return false;
+
+            setMovementforPlayer(player, direction.direction);
+        
             ws.send(
               JSON.stringify({
                 type: 'move',
@@ -383,28 +447,49 @@ const EmptySpace: React.FC = () => {
               y: targetY,
               duration: 100,
               onComplete: () => {
-                player.stop();
               },
             });
+
+            return true;
           }
-        }        
-    
-        function addOtherPlayer(id: string, x: number, y: number, scene: Phaser.Scene) {
-          const otherPlayer = scene.physics.add.sprite(x, y, 'avatar1');
-          scene.physics.add.collider(player, otherPlayer);
-          otherPlayer.setImmovable(true);
+        }
+
+        function addOtherPlayer(id: string, x: number, y: number, scene: Phaser.Scene) { 
+          const otherPlayer = scene.physics.add.sprite(x, y, 'avatar1-front')
+          .setSize(64,64)
+          .setOrigin(0.5)
+          .setCollideWorldBounds(true)
+          .setImmovable(true);
+
           otherPlayers.set(id, otherPlayer);
+        }
+
+        function findOtherPlayerDirection(prevx: number, prevy: number, x: number, y: number){
+          if (x>prevx) {
+            return 'right';
+          } else if (x<prevx) {
+            return 'left';
+          } else if (y>prevy) {
+            return 'down';
+          } else if (y<prevy) {
+            return 'up';
+          }
+          return null;
         }
     
         function updatePlayerPosition(id: string, x: number, y: number, scene: Phaser.Scene) {
           if (otherPlayers.has(id)) {
             const otherPlayer = otherPlayers.get(id) as Phaser.Physics.Arcade.Sprite;
-            otherPlayers.get(id)?.play('walk', true);
+            const direction = findOtherPlayerDirection(otherPlayer.x, otherPlayer.y, x, y);
+            if (direction) {
+              setMovementforPlayer(otherPlayer, direction!);
+            }
+
             scene.tweens.add({
               targets: otherPlayer,
               x: x,
               y: y,
-              duration: 100,
+              duration: 200,
               onComplete: () => {
                 otherPlayer.stop();
               }

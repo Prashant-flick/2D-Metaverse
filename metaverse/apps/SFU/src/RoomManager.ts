@@ -24,7 +24,6 @@ export class RoomManager{
       }
 
       this.rooms.set(spaceId, [...(this.rooms.get(spaceId))!, user]);
-      this.checkUserCloseBy(user, spaceId);
     }
 
     removeUser(spaceId: string, user: User){
@@ -96,45 +95,30 @@ export class RoomManager{
       }
     }
 
-    // async removeUserStream(spaceId: string, user: User){
-    //   const userTrack = user.myStream?.getTracks()[0];
-    //   this.rooms.get(spaceId)?.map((u) => {
-    //     if (u.id!==user.id) {
-    //       const sender = u.peer?.getSenders().find(sender => sender.track===userTrack);
-    //       if (sender) {
-    //         u.peer?.removeTrack(sender)
-    //         u.ReNegotiation();
-    //       }
-    //     }
-    //   })
-    //   if (userTrack?.readyState === 'live') {
-    //     userTrack.stop();
-    //   }
-    // }
-
     async checkUserCloseBy(user: User, spaceId: string){
+      const reqDistance = 150;
       if (this.rooms.has(spaceId)) {
         this.rooms.get(spaceId)?.map(async(u)=> {
           if (u.id !== user.id) {
             const distance = Number(Math.sqrt(Math.pow(u.x - user.x, 2) + Math.pow(u.y - user.y, 2)));
             if (this.dist.has(JSON.stringify([u.id, user.id])) ) {
-              if (Number(this.dist.get(JSON.stringify([u.id, user.id]))) > 80 && distance<=80) {
+              if (Number(this.dist.get(JSON.stringify([u.id, user.id]))) > reqDistance && distance<=reqDistance) {
                 this.sendStream(u, user);
               }
-              if (distance>80 && Number(this.dist.get(JSON.stringify([u.id, user.id])))<=80) {
+              if (distance>reqDistance && Number(this.dist.get(JSON.stringify([u.id, user.id])))<=reqDistance) {
                 this.removeStream(u, user);
               }
               this.dist.set(JSON.stringify([u.id, user.id]), Number(distance));
             } else if (this.dist.has(JSON.stringify([user.id, u.id]))) {
-              if (Number(this.dist.get(JSON.stringify([user.id, u.id]))) > 80 && distance<=80) {
+              if (Number(this.dist.get(JSON.stringify([user.id, u.id]))) > reqDistance && distance<=reqDistance) {
                 this.sendStream(u, user);
               }
-              if (distance>80 && Number(this.dist.get(JSON.stringify([user.id, u.id])))<=80) {
+              if (distance>reqDistance && Number(this.dist.get(JSON.stringify([user.id, u.id])))<=reqDistance) {
                 this.removeStream(u, user);
               }
               this.dist.set(JSON.stringify([user.id, u.id]), Number(distance));
             } else {
-              if (distance<=80) {
+              if (distance<=reqDistance) {
                 this.sendStream(u, user);
               }
               this.dist.set(JSON.stringify([u.id, user.id]), Number(distance));
