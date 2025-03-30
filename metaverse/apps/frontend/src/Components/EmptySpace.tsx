@@ -125,8 +125,8 @@ const EmptySpace: React.FC = () => {
   useEffect(() => {
     const init = async() => {
       if (isValidSpaceId) {
-        const spacex = Number(space?.dimensions?.split("x")[0]);
-        const spacey = Number(space?.dimensions?.split("x")[1]);
+        const spacex: number = Math.floor(Number((Number(space?.dimensions?.split("x")[0]))/32))*32;
+        const spacey: number = Math.floor(Number((Number(space?.dimensions?.split("x")[1]))/32))*32;
   
         await createPeer();
   
@@ -146,7 +146,6 @@ const EmptySpace: React.FC = () => {
           scene: {
             preload,
             create,
-            update,
           },
         };
     
@@ -157,13 +156,15 @@ const EmptySpace: React.FC = () => {
         const otherPlayers = new Map<string, Phaser.Physics.Arcade.Sprite>;
     
         function preload(this: Phaser.Scene) {
-          this.load.image('avatar', '/pikachu2d.jpeg');
-          this.load.image('table', '/2dtable.jpeg');
-          this.load.image('chair', '/2dchair.jpeg');
+          this.load.atlas(
+            'avatar1',
+            '/assets/avatar1.png',
+            '/assets/avatar1.json'
+          );
         }
   
         function drawGrid(scene: Phaser.Scene) {
-          const gridSize = 40;
+          const gridSize = 32;
           const graphics = scene.add.graphics();
           graphics.lineStyle(0.5, 0xaaaaaa, 0.1);
         
@@ -225,7 +226,6 @@ const EmptySpace: React.FC = () => {
                 }
                 break;
               case 'user-left':
-                console.log('user-left', data.payload.userStreamId);
                 if (data.payload.userStreamId) {
                   setOtherStreams(prev => prev.filter(stream => stream.id!==data.payload.userStreamId))
                 }
@@ -240,7 +240,6 @@ const EmptySpace: React.FC = () => {
             const data = JSON.parse(event.data);
             switch (data.type) {
               case 'space-joined': {
-                console.log('space-joined');
                 const offer = await peer.current?.createOffer();
                 await peer.current?.setLocalDescription(offer);
                 wss.send(JSON.stringify({
@@ -260,7 +259,10 @@ const EmptySpace: React.FC = () => {
                 addOtherPlayer(data.payload.userId, data.payload.x, data.payload.y, this);
                 break;
               case 'move':
-                updatePlayerPosition(data.payload.userId, data.payload.x, data.payload.y);
+                updatePlayerPosition(data.payload.userId, data.payload.x, data.payload.y, this);
+                break;
+              case 'movement-rejected':
+                updatePlayerPosition(data.payload.userId, data.payload.x, data.payload.y, this);
                 break;
               case 'user-left':
                 removeOtherPlayer(data.payload.userId);
@@ -281,11 +283,28 @@ const EmptySpace: React.FC = () => {
                 break;
             }
           };
+
+          updateMove(this);
         }
   
         function addMe(scene: Phaser.Scene, x: number, y: number, users: otherUserProps[]){
-          player = scene.physics.add.sprite(x, y, 'avatar').setScale(0.2);
+          player = scene.physics.add.sprite(x, y, 'avatar1');
           player.setCollideWorldBounds(true);
+          player.x=x;
+          player.y=y;
+
+          scene.anims.create({
+            key: 'walk',
+            frames: scene.anims.generateFrameNames('avatar1', {
+              prefix: 'Sprite-0005 #Tag ',
+              start: 0,
+              end: 5,
+              suffix: '.aseprite',
+              zeroPad: 0,
+            }),
+            frameRate: 10,
+            repeat: -1,
+          });
   
           scene.cameras.main.startFollow(player);
           
@@ -296,55 +315,100 @@ const EmptySpace: React.FC = () => {
           }
         }
     
-        function update(this: Phaser.Scene) {
-          if (player) {
-            player.setVelocity(0);
-            let moved = false;
-    
-            if (cursors?.left?.isDown) {
-              player.setVelocityX(-200);
-              moved = true;
-            } else if (cursors?.right?.isDown) {
-              player.setVelocityX(200);
-              moved = true;
-            } else {
-              player.setVelocityX(0);
+        function updateMove(scene: Phaser.Scene) {
+          const stepSize = 32;
+          let moving = false;
+          let moveInterval: NodeJS.Timeout | null = null;
+          let targetX = 0;
+          let targetY = 0;
+        
+          scene.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+            if (moving) return;
+            targetX = player.x;
+            targetY = player.y;
+        
+            const direction = getDirection(event.key);
+            if (direction) {
+              moving = true;
+
+              moveInterval = setInterval(() => {
+                movePlayer(direction);
+              }, 100);
             }
-      
-            if (cursors?.up?.isDown) {
-              player.setVelocityY(-200);
-              moved = true;
-            } else if (cursors?.down?.isDown) {
-              player.setVelocityY(200);
-              moved = true;
-            } else {
-              player.setVelocityY(0);
+          });
+        
+          scene.input.keyboard?.on('keyup', () => {
+            moving = false;
+            if (moveInterval) {
+              clearInterval(moveInterval);
+              moveInterval=null;
             }
-  
-            if (moved) {
-              ws.send(
-                JSON.stringify({
-                  type: 'move',
-                  payload: {
-                    x: player.x,
-                    y: player.y,
-                  },
-                })
-              );
+            player.stop();
+          });
+        
+          function getDirection(key: string) {
+            switch (key) {
+              case 'ArrowLeft':
+                return { x: -stepSize, y: 0 };
+              case 'ArrowRight':
+                return { x: stepSize, y: 0 };
+              case 'ArrowUp':
+                return { x: 0, y: -stepSize };
+              case 'ArrowDown':
+                return { x: 0, y: stepSize };
+              default:
+                return null;
             }
           }
-        }
+        
+          function movePlayer(direction: {x: number, y: number}) {
+            targetX += direction.x;
+            targetY += direction.y;
+        
+            player.play('walk', true);
+
+            ws.send(
+              JSON.stringify({
+                type: 'move',
+                payload: {
+                  x: targetX,
+                  y: targetY,
+                },
+              })
+            );
+        
+            scene.tweens.add({
+              targets: player,
+              x: targetX,
+              y: targetY,
+              duration: 100,
+              onComplete: () => {
+                player.stop();
+              },
+            });
+          }
+        }        
     
         function addOtherPlayer(id: string, x: number, y: number, scene: Phaser.Scene) {
-          const otherPlayer = scene.physics.add.sprite(x, y, 'avatar').setScale(0.2);
+          const otherPlayer = scene.physics.add.sprite(x, y, 'avatar1');
           scene.physics.add.collider(player, otherPlayer);
           otherPlayer.setImmovable(true);
           otherPlayers.set(id, otherPlayer);
         }
     
-        function updatePlayerPosition(id: string, x: number, y: number) {
+        function updatePlayerPosition(id: string, x: number, y: number, scene: Phaser.Scene) {
           if (otherPlayers.has(id)) {
-            otherPlayers.get(id)?.setPosition(x, y);
+            const otherPlayer = otherPlayers.get(id) as Phaser.Physics.Arcade.Sprite;
+            otherPlayers.get(id)?.play('walk', true);
+            scene.tweens.add({
+              targets: otherPlayer,
+              x: x,
+              y: y,
+              duration: 100,
+              onComplete: () => {
+                otherPlayer.stop();
+              }
+            });
           }
         }
     
