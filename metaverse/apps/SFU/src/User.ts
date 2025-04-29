@@ -113,6 +113,9 @@ export class User{
             this.peer?.addIceCandidate(parsedData.payload.candidate);
           }
           break;
+        case 'check-nearby-user':
+          RoomManager.getInstance().checkUserCloseBy(this, this.spaceId!);
+          break;
         default:
           console.log("wrong message type after parsing data", parsedData.type);
           break;

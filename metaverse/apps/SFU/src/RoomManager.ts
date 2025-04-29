@@ -50,8 +50,6 @@ export class RoomManager{
         if (!trackExists) {
           user.peer?.addTrack(track, u.myStream!);
           f=true;
-        } else {
-          console.log("user track already exists");
         }
       })
       if (f) {
@@ -65,8 +63,6 @@ export class RoomManager{
         if (!trackExists) {
           u.peer?.addTrack(track, user.myStream!);
           f=true;
-        } else {
-          console.log("user track already exists");
         }
       })
 
@@ -78,18 +74,14 @@ export class RoomManager{
     async removeStream(u: User, user: User){
       const userTrack = user.myStream?.getTracks()[0];
       const uSender = u.peer?.getSenders().find(sender => sender.track===userTrack);
-      console.log('removing stream processing');
       if (uSender) {
-        console.log('removing stream');
         u.peer?.removeTrack(uSender);
         u.ReNegotiation();
       }
 
       const uTrack = u.myStream?.getTracks()[0];
       const userSender = user.peer?.getSenders().find(sender => sender.track===uTrack);
-      console.log('removing stream processing 2');
       if (userSender) {
-        console.log('removing stream 2');
         user.peer?.removeTrack(userSender);
         user.ReNegotiation();
       }
