@@ -4,46 +4,47 @@ import { adminRouter } from "./admin";
 import { spaceRouter } from "./space";
 import { signinSchema, signupSchema } from "../../types";
 import client from "@repo/db/client";
-import jwt, {JwtPayload} from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcryptjs"
 import { userMiddleware } from "../../middleware/user";
+import { mapsRouter } from "./map";
 
 export const router = Router();
 
-router.post('/refresh', async(req, res) => {
-  const refreshToken = req.cookies?.refreshToken;
-  
-  if (!refreshToken) {
-    res.status(401).json({
-      message: "refresh Token Expired"
-    })
-    return;
-  }
+router.post('/refresh', async (req, res) => {
+    const refreshToken = req.cookies?.refreshToken;
 
-  interface DecodedUser extends JwtPayload {
-    userId: string;
-    role: 'Admin' | 'User';
-  }
+    if (!refreshToken) {
+        res.status(401).json({
+            message: "refresh Token Expired"
+        })
+        return;
+    }
 
-  try {
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || "HELLO") as DecodedUser;
-    const accessToken = generateAccessToken({ id: decoded.userId, role: decoded.role });
-    res.status(200).json({ accessToken, userId: decoded.userId });
-  } catch (err) {
-    res.status(403).json({
-      message: "jwt verification failed"
-    });
-  }
+    interface DecodedUser extends JwtPayload {
+        userId: string;
+        role: 'Admin' | 'User';
+    }
+
+    try {
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || "HELLO") as DecodedUser;
+        const accessToken = generateAccessToken({ id: decoded.userId, role: decoded.role });
+        res.status(200).json({ accessToken, userId: decoded.userId });
+    } catch (err) {
+        res.status(403).json({
+            message: "jwt verification failed"
+        });
+    }
 })
 
-router.post("/signup", async(req, res) => {
+router.post("/signup", async (req, res) => {
     const parsedData = signupSchema.safeParse(req.body);
-    
-    if(!parsedData.success){
-        res.status(400).json({message: "Validation failed"})
+
+    if (!parsedData.success) {
+        res.status(400).json({ message: "Validation failed" })
         return
     }
-    
+
     try {
         const checkemailAndUsername = await client.user.findFirst({
             where: {
@@ -62,7 +63,7 @@ router.post("/signup", async(req, res) => {
         }
 
         const hashedPassword = bcrypt.hashSync(parsedData.data.password, parseInt(process.env.BCRYPT_SECRET || "HEHE"));
-        
+
         const user = await client.user.create({
             data: {
                 email: parsedData.data.email,
@@ -74,16 +75,16 @@ router.post("/signup", async(req, res) => {
 
         res.status(200).json({
             userId: user.id
-        }) 
-    } catch (error) {        
-        res.status(404).json({ message: "axios error"});
+        })
+    } catch (error) {
+        res.status(404).json({ message: "axios error" });
     }
 })
 
-router.post("/signin", async(req,res) => {
+router.post("/signin", async (req, res) => {
     const parsedData = signinSchema.safeParse(req.body);
-    if(!parsedData.success){
-        res.status(403).json({message: "Validation failed"})
+    if (!parsedData.success) {
+        res.status(403).json({ message: "Validation failed" })
         return
     }
 
@@ -95,14 +96,14 @@ router.post("/signin", async(req,res) => {
         })
 
         if (!user) {
-            res.status(403).json({ message: "user Doesn't exist"});
+            res.status(403).json({ message: "user Doesn't exist" });
             return
         }
 
         const verifyPassword = bcrypt.compareSync(parsedData.data.password, user.password)
-        
-        if(!verifyPassword){
-            res.status(403).json({ message: "Invalid Password"});
+
+        if (!verifyPassword) {
+            res.status(403).json({ message: "Invalid Password" });
             return
         }
 
@@ -110,10 +111,10 @@ router.post("/signin", async(req,res) => {
         const refreshToken = generateRefreshToken(user);
 
         res.cookie('refreshToken', refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV==='production',
-          sameSite: 'strict',
-          path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
         });
 
         res.status(200).json({
@@ -127,20 +128,20 @@ router.post("/signin", async(req,res) => {
     }
 })
 
-router.post("/signout", async(req, res) => {
-  res.clearCookie('refreshToken', {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV==='production',
-  });
+router.post("/signout", async (req, res) => {
+    res.clearCookie('refreshToken', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
+    });
 
-  res.status(200).json({
-    message: "signout succeeded"
-  })
+    res.status(200).json({
+        message: "signout succeeded"
+    })
 })
 
-router.get("/elements", userMiddleware, async(req, res) => {
+router.get("/elements", userMiddleware, async (req, res) => {
     try {
         const elemRes = await client.element.findMany();
 
@@ -159,7 +160,7 @@ router.get("/elements", userMiddleware, async(req, res) => {
     }
 })
 
-router.get("/avatars", userMiddleware, async(req, res) => {
+router.get("/avatars", userMiddleware, async (req, res) => {
     try {
         const avatarsRes = await client.avatar.findMany();
 
@@ -171,32 +172,33 @@ router.get("/avatars", userMiddleware, async(req, res) => {
             }))
         })
     } catch (error) {
-        res.status(400).json({ message: "getting all avatars failed"})   
+        res.status(400).json({ message: "getting all avatars failed" })
     }
 })
 
 const generateAccessToken = (user: { id: string, role: 'Admin' | 'User' }) => {
     const token = jwt.sign({
-      userId: user.id,
-      role: user.role
+        userId: user.id,
+        role: user.role
     }, process.env.ACCESS_TOKEN_SECRET || "HELLO",
-    {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    })
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+        })
     return token;
 }
 
 const generateRefreshToken = (user: { id: string, role: 'Admin' | 'User' }) => {
-  const token = jwt.sign({
-    userId: user.id,
-    role: user.role
-  }, process.env.REFRESH_TOKEN_SECRET || "HELLO",
-  {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-  })
-  return token;
+    const token = jwt.sign({
+        userId: user.id,
+        role: user.role
+    }, process.env.REFRESH_TOKEN_SECRET || "HELLO",
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+        })
+    return token;
 }
 
 router.use("/user", userRouter);
 router.use("/admin", adminRouter);
 router.use("/space", spaceRouter);
+router.use("/map", mapsRouter);

@@ -1,37 +1,51 @@
-import { ArrowRight, Users, Video, Globe, Monitor, CheckCircle } from 'lucide-react';
-import { useNavigate, Link  } from 'react-router-dom';
-import { useAuth } from '../Context/UseAuth';
-import { useEffect } from 'react';
+import { ArrowRight, Users, Video, Globe, Monitor, CheckCircle } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../Context/UseAuth";
+import { useEffect } from "react";
 
 const GatherTownHomepage = () => {
   const { isLogin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const FirstVisit = sessionStorage.getItem('firstVisit');
+    const FirstVisit = sessionStorage.getItem("firstVisit");
 
     if (!FirstVisit && isLogin) {
-      sessionStorage.setItem('firstVisit', 'true');
-      navigate('/app', { replace: true });
+      sessionStorage.setItem("firstVisit", "true");
+      navigate("/app", { replace: true });
     }
-  },[isLogin, navigate])
+  }, [isLogin, navigate]);
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navigation */}
       <nav className="flex justify-between items-center px-6 py-4 bg-white">
         <div className="flex items-center">
-          <Link to="/" className="text-2xl font-bold text-indigo-600">gather</Link>
+          <Link to="/" className="text-2xl font-bold text-indigo-600">
+            Gather village
+          </Link>
         </div>
         <div className="hidden md:flex items-center space-x-6">
-          <a href="#" className="text-gray-600 hover:text-indigo-600">Product</a>
-          <a href="#" className="text-gray-600 hover:text-indigo-600">Pricing</a>
-          <a href="#" className="text-gray-600 hover:text-indigo-600">Resources</a>
-          <a href="#" className="text-gray-600 hover:text-indigo-600">About</a>
+          <a href="#" className="text-gray-600 hover:text-indigo-600">
+            Product
+          </a>
+          <a href="#" className="text-gray-600 hover:text-indigo-600">
+            Pricing
+          </a>
+          <a href="#" className="text-gray-600 hover:text-indigo-600">
+            Resources
+          </a>
+          <a href="#" className="text-gray-600 hover:text-indigo-600">
+            About
+          </a>
         </div>
         <div className="flex items-center space-x-4">
-          <Link to={isLogin?'/app':'/login'} className="text-gray-600 hover:text-indigo-600">Sign in</Link>
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Try Gather</button>
+          <Link to={isLogin ? "/app" : "/login"} className="text-gray-600 hover:text-indigo-600">
+            Sign in
+          </Link>
+          <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+            Try Gather
+          </button>
         </div>
       </nav>
 
@@ -44,17 +58,18 @@ const GatherTownHomepage = () => {
                 Your Virtual Space to Work, Meet, and Socialize
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                Create your own custom virtual space for better team collaboration, 
-                engaging events, and meaningful social interactions.
+                Create your own custom virtual space for better team collaboration, engaging events,
+                and meaningful social interactions.
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={(e) => {
-                    e.preventDefault()
-                    navigate(`${isLogin?"/app":"/login"}`)
+                    e.preventDefault();
+                    navigate(`${isLogin ? "/app" : "/login"}`);
                   }}
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 flex items-center justify-center">
-                    Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                  className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 flex items-center justify-center"
+                >
+                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
                 </button>
                 <button className="border border-indigo-600 text-indigo-600 px-6 py-3 rounded-lg hover:bg-indigo-50">
                   Watch Demo
@@ -70,11 +85,16 @@ const GatherTownHomepage = () => {
                 </div>
                 <div className="bg-gray-800 p-4 aspect-video">
                   <div className="grid grid-cols-3 grid-rows-3 gap-2 h-full">
-                    {Array(9).fill(0).map((_, i) => (
-                      <div key={i} className="bg-gray-700 rounded-md flex items-center justify-center">
-                        <Users className="text-gray-400" />
-                      </div>
-                    ))}
+                    {Array(9)
+                      .fill(0)
+                      .map((_, i) => (
+                        <div
+                          key={i}
+                          className="bg-gray-700 rounded-md flex items-center justify-center"
+                        >
+                          <Users className="text-gray-400" />
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -89,7 +109,8 @@ const GatherTownHomepage = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Why Choose Gather?</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Our unique spatial interface brings teams together for more natural, human interactions.
+              Our unique spatial interface brings teams together for more natural, human
+              interactions.
             </p>
           </div>
 
@@ -100,7 +121,8 @@ const GatherTownHomepage = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Seamless Video</h3>
               <p className="text-gray-600">
-                Move around and talk to people nearby, just like in real life. No more awkward video grid layouts.
+                Move around and talk to people nearby, just like in real life. No more awkward video
+                grid layouts.
               </p>
             </div>
 
@@ -110,7 +132,8 @@ const GatherTownHomepage = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Custom Spaces</h3>
               <p className="text-gray-600">
-                Design your own virtual office, classroom, or event space with our intuitive builder.
+                Design your own virtual office, classroom, or event space with our intuitive
+                builder.
               </p>
             </div>
 
@@ -133,7 +156,8 @@ const GatherTownHomepage = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Perfect For Any Setting</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              From small teams to large organizations, Gather helps you create meaningful connections.
+              From small teams to large organizations, Gather helps you create meaningful
+              connections.
             </p>
           </div>
 
@@ -202,36 +226,96 @@ const GatherTownHomepage = () => {
             <div>
               <h3 className="text-white font-semibold mb-4">Product</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">Features</a></li>
-                <li><a href="#" className="hover:text-white">Security</a></li>
-                <li><a href="#" className="hover:text-white">Enterprise</a></li>
-                <li><a href="#" className="hover:text-white">Pricing</a></li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Security
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Enterprise
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Pricing
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="text-white font-semibold mb-4">Resources</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Help Center</a></li>
-                <li><a href="#" className="hover:text-white">Templates</a></li>
-                <li><a href="#" className="hover:text-white">Status</a></li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Blog
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Templates
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Status
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="text-white font-semibold mb-4">Company</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Careers</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
-                <li><a href="#" className="hover:text-white">Press</a></li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Press
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="text-white font-semibold mb-4">Legal</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">Privacy</a></li>
-                <li><a href="#" className="hover:text-white">Terms</a></li>
-                <li><a href="#" className="hover:text-white">Cookie Policy</a></li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Privacy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Terms
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Cookie Policy
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

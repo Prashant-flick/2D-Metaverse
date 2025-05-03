@@ -3,10 +3,10 @@ import { createAvatarSchema, createElementSchema, createMapSchema, updateElement
 import client from "@repo/db/client"
 import { adminMiddleware } from "../../middleware/admin";
 
-export const adminRouter =  Router();
+export const adminRouter = Router();
 adminRouter.use(adminMiddleware);
 
-adminRouter.post("/element", async(req, res) => {
+adminRouter.post("/element", async (req, res) => {
     const parsedData = createElementSchema.safeParse(req.body);
     if (!parsedData.success) {
         res.status(400).json({ message: "type validation failed" })
@@ -31,11 +31,11 @@ adminRouter.post("/element", async(req, res) => {
             id: elementRes.id
         })
     } catch (error) {
-        res.status(400).json({ message: "element creation failed"});
+        res.status(400).json({ message: "element creation failed" });
     }
 })
 
-adminRouter.put("/element/:elementId", async(req, res) => {
+adminRouter.put("/element/:elementId", async (req, res) => {
     const parsedData = updateElementSchema.safeParse(req.body);
     const elementId = req.params.elementId as string;
 
@@ -66,9 +66,9 @@ adminRouter.put("/element/:elementId", async(req, res) => {
     }
 })
 
-adminRouter.post("/avatar", async(req, res) => {
+adminRouter.post("/avatar", async (req, res) => {
     const parsedData = createAvatarSchema.safeParse(req.body);
-    if(!parsedData.success){
+    if (!parsedData.success) {
         res.status(400).json({ message: "type validation failed" });
         return
     }
@@ -88,27 +88,27 @@ adminRouter.post("/avatar", async(req, res) => {
             id: avatarRes.id
         })
     } catch (error) {
-        res.status(400).json({ message: "avatar creation failed"})
+        res.status(400).json({ message: "avatar creation failed" })
     }
 })
 
-adminRouter.post("/map", async(req, res) => {
+adminRouter.post("/map", async (req, res) => {
     const parsedData = createMapSchema.safeParse(req.body);
-    
+
     if (!parsedData.success) {
         res.status(400).json({ message: "type validation failed" })
         return
     }
 
     try {
-        const mapRes = await client.$transaction( async(mapClient) => {
+        const mapRes = await client.$transaction(async (mapClient) => {
             const map = await mapClient.map.create({
                 data: {
                     name: parsedData.data.name,
                     thumbnail: parsedData.data.thumbnail,
                     dimensions: parsedData.data.dimensions,
                 }
-            })            
+            })
 
             await mapClient.mapElements.createMany({
                 data: parsedData.data.defaultElements.map(m => ({

@@ -1,46 +1,75 @@
-import { useEffect, useState } from 'react';
-import { ArrowRight, Calendar, Building, Video, Globe } from 'lucide-react';
-import { useAuth } from '../Context/UseAuth';
-import { useNavigate, Link } from 'react-router-dom';
-import { axios } from '../Axios/axios';
-import { config } from '../config'
+import { useEffect, useState } from "react";
+import { ArrowRight, Calendar, Building, Video, Globe } from "lucide-react";
+import { useAuth } from "../Context/UseAuth";
+import { useNavigate, Link } from "react-router-dom";
+import { axios } from "../Axios/axios";
+import { config } from "../config";
 
-interface userSpaceProps{
-  id: string,
-  name: string,
-  dimensions: string,
-  thumbnail: string
+interface userSpaceProps {
+  id: string;
+  name: string;
+  dimensions: string;
+  thumbnail: string;
 }
 
-const GatherTownAppLanding = () => {  
-  const [spaceCode, setSpaceCode] = useState('');
+interface mapProps {
+  id: string;
+  name: string;
+  thumbnail: string;
+  dimensions: string;
+  elements: {
+    id: string;
+    mapId: string;
+    elementId: string;
+    x: number;
+    y: number;
+  }[];
+}
+
+const GatherTownAppLanding = () => {
+  const [spaceCode, setSpaceCode] = useState("");
   const { logout, accessToken, isLogin } = useAuth();
   const [isNewSpaceFormOpen, setIsNewSpaceFormOpen] = useState<boolean>(false);
+  const [isShowMapsOpen, setIsShowMapsOpen] = useState<boolean>(false);
   const navigate = useNavigate();
-  const [userSpaces, setUserSpaces] = useState<[] | userSpaceProps[]>()
+  const [userSpaces, setUserSpaces] = useState<[] | userSpaceProps[]>();
+  const [maps, setMap] = useState<mapProps[]>([]);
 
   useEffect(() => {
     if (!isLogin) {
-      navigate('/');
+      navigate("/");
     }
-  },[isLogin, navigate])
+  }, [isLogin, navigate]);
 
   useEffect(() => {
-    const findspaces = async() => {
-      try {
-        const res = await axios.get(`${config.BackendUrl}/space/all`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        })
+    if (accessToken) {
+      const findspaces = async () => {
+        try {
+          const res = await axios.get(`${config.BackendUrl}/space/recentSpaces`, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
 
-        setUserSpaces(res.data.spaces);
-      } catch (error) {
-        console.error(error);
-      }
+          setUserSpaces(res.data.spaces);
+        } catch (error) {
+          console.error(error);
+        }
+      };
+      findspaces();
+
+      const findMaps = async () => {
+        const mapsRes = await axios.get(`${config.BackendUrl}/map/all`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        setMap(mapsRes.data.mapRes);
+      };
+      findMaps();
     }
-    findspaces();
-  }, [accessToken])
+  }, [accessToken]);
 
   const [newSpaceData, setNewSpaceData] = useState({
     spaceId: "",
@@ -48,146 +77,213 @@ const GatherTownAppLanding = () => {
     x: 200,
     y: 200,
     dimensions: "",
-    thumbnail: "/thumbnail_empty_space",
+    thumbnail: "/thumbnail_office",
   });
 
-  const logOut = async(e: React.MouseEvent<HTMLButtonElement>) => {
+  const logOut = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     await logout();
-    navigate('/')
+    navigate("/");
   };
 
   const getRandomString = (length: number) => {
     const characters = "QWREYTOYJLDJSBCMSMZshdfirutowenxvcvnbnzmc1234567890";
 
     let result = "";
-    for (let i=0; i<length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
 
     return result;
-  }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewSpaceData(prev => ({ ...prev, [name]: value }));
+    setNewSpaceData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCreateSpace = async(e: React.MouseEvent<HTMLFormElement>) => {
+  const handleCreateSpace = async (e: React.MouseEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     try {
       const newSpaceId = getRandomString(5);
       newSpaceData.spaceId = newSpaceId;
-      newSpaceData.thumbnail = "thumbnail1";
-      if( !newSpaceData.name || !newSpaceData.thumbnail || !newSpaceData.x || !newSpaceData.y ) {
+      newSpaceData.thumbnail = "thumbnail2";
+      if (!newSpaceData.name || !newSpaceData.thumbnail || !newSpaceData.x || !newSpaceData.y) {
         console.error("all feilds are required");
         return;
       }
-      newSpaceData.dimensions = newSpaceData.x.toString() + 'x' + newSpaceData.y.toString();
-      
-      const res = await axios.post(`${config.BackendUrl}/space`, newSpaceData , {
+      newSpaceData.dimensions = newSpaceData.x.toString() + "x" + newSpaceData.y.toString();
+
+      const res = await axios.post(`${config.BackendUrl}/space`, newSpaceData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      })
-      
+      });
+
       if (res.status === 200) {
         navigate(`/app/space/${res.data.id}`);
       }
     } catch (error) {
       console.error(error);
     }
-  }
+  };
 
   const handleJoinSpace = (spaceId: string) => {
     navigate(`/app/space/${spaceId}`);
-  }
+  };
+
+  const handleCreateSpaceUsingPreBuildMaps = async (mapId: string, name: string) => {
+    if (!mapId) {
+      console.error("no MapID");
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${config.BackendUrl}/space`,
+        {
+          mapId,
+          name,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      console.log("space creation success");
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
-    <div className={`min-h-screen bg-gray-50 flex flex-col ${isNewSpaceFormOpen && 'bg-gray-200'}`}>
+    <div className={`min-h-screen bg-gray-50 flex flex-col ${isNewSpaceFormOpen && "bg-gray-200"}`}>
       {isNewSpaceFormOpen && (
-      <div
-        onClick={() => setIsNewSpaceFormOpen(prev=>!prev)}
-        className='fixed h-screen w-screen flex justify-center items-center'>
-        <div 
-          onClick={(e) => e.stopPropagation()}
-          className="relative bg-white w-96 p-6 shadow-lg rounded-lg">
-          <button
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer p-1"
-            onClick={() => setIsNewSpaceFormOpen(false)}
+        <div
+          onClick={() => setIsNewSpaceFormOpen((prev) => !prev)}
+          className="fixed h-screen w-screen flex justify-center items-center"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-white w-96 p-6 shadow-lg rounded-lg"
           >
-            ✕
-          </button>
-          <form onSubmit={handleCreateSpace}>
-            <div className="mb-4">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={newSpaceData.name}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Dimensions</label>
-              <div className="flex gap-2 mt-1">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer p-1"
+              onClick={() => setIsNewSpaceFormOpen(false)}
+            >
+              ✕
+            </button>
+            <form onSubmit={handleCreateSpace}>
+              <div className="mb-4">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
                 <input
-                  id="x-dimension"
-                  name="x"
-                  type="number"
-                  min="200"
-                  max="2000"
+                  id="name"
+                  name="name"
+                  type="text"
                   required
-                  value={newSpaceData.x}
+                  value={newSpaceData.name}
                   onChange={handleChange}
-                  className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Width (x)"
-                />
-                <input
-                  id="y-dimension"
-                  name="y"
-                  type="number"
-                  min="200"
-                  max="2000"
-                  required
-                  value={newSpaceData.y}
-                  onChange={handleChange}
-                  className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Height (y)"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
-            </div>
 
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 cursor-pointer"
-            >
-              Create Space
-            </button>
-          </form>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Dimensions</label>
+                <div className="flex gap-2 mt-1">
+                  <input
+                    id="x-dimension"
+                    name="x"
+                    type="number"
+                    min="200"
+                    max="2000"
+                    required
+                    value={newSpaceData.x}
+                    onChange={handleChange}
+                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Width (x)"
+                  />
+                  <input
+                    id="y-dimension"
+                    name="y"
+                    type="number"
+                    min="200"
+                    max="2000"
+                    required
+                    value={newSpaceData.y}
+                    onChange={handleChange}
+                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Height (y)"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 cursor-pointer"
+              >
+                Create Space
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
+
+      {isShowMapsOpen && (
+        <div
+          onClick={() => setIsShowMapsOpen((prev) => !prev)}
+          className="fixed h-screen w-screen flex justify-center items-center"
+        >
+          {maps &&
+            maps.length &&
+            maps.map((map: mapProps) => {
+              console.log(map.thumbnail);
+
+              return (
+                <div
+                  onClick={() => {
+                    handleCreateSpaceUsingPreBuildMaps(map.id, map.name);
+                  }}
+                  key={map.id}
+                  className="relative bg-white w-96 p-6 shadow-2xl shadow-black rounded-lg"
+                >
+                  <div className="flex-col justify-center items-center w-full text-center">
+                    <button
+                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer p-1 font-bold"
+                      onClick={() => setIsNewSpaceFormOpen(false)}
+                    >
+                      ✕
+                    </button>
+                    <img className="pt-3" src={map.thumbnail} alt="no thumbnail Available" />
+                    <h2 className="font-bold text-2xl">
+                      {map.name} / {map.dimensions}
+                    </h2>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
       )}
       {/* Header */}
-      <header className={`shadow-sm ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
+      <header className={`shadow-sm ${isNewSpaceFormOpen ? "bg-gray-50" : "bg-white"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            <Link to="/" className="text-2xl font-bold text-indigo-600">gather</Link>
+            <Link to="/" className="text-2xl font-bold text-indigo-600">
+              Gather village
+            </Link>
           </div>
           <div className="flex items-center space-x-4">
             <button className="text-gray-600 hover:text-indigo-600">Help</button>
             <button className="text-gray-600 hover:text-indigo-600">Account</button>
             <button
               onClick={logOut}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
-                Sign Out
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            >
+              Sign Out
             </button>
           </div>
         </div>
@@ -203,7 +299,9 @@ const GatherTownAppLanding = () => {
           </div>
 
           {/* Join Section */}
-          <div className={`rounded-xl shadow-md p-6 mb-8 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
+          <div
+            className={`rounded-xl shadow-md p-6 mb-8 ${isNewSpaceFormOpen ? "bg-gray-50" : "bg-white"}`}
+          >
             <h2 className="text-xl font-semibold mb-4">Join a Space</h2>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
               <input
@@ -213,7 +311,7 @@ const GatherTownAppLanding = () => {
                 value={spaceCode}
                 onChange={(e) => setSpaceCode(e.target.value)}
               />
-              <button 
+              <button
                 className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center"
                 disabled={!spaceCode}
                 onClick={(e) => {
@@ -227,58 +325,104 @@ const GatherTownAppLanding = () => {
           </div>
 
           {/* Recent Spaces */}
-          <div className={`rounded-xl shadow-md p-6 mb-8 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
+          <div
+            className={`rounded-xl shadow-md p-6 mb-8 ${isNewSpaceFormOpen ? "bg-gray-50" : "bg-white"}`}
+          >
             <h2 className="text-xl font-semibold mb-4">My Spaces</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {
-              userSpaces && userSpaces.length && userSpaces.map((space, index) => (
-                <div
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleJoinSpace(space.id);
-                  }}
-                  key={index} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all cursor-pointer">
-                  <div className="flex flex-col justify-between items-center">
-                    <img className='mb-2' src={space.thumbnail==='thumbnail1'?'/thumbnail_empty_space.jpg':''} alt="NO thumbnail found" />
-                    <h1 className='text-xl font-semibold'>{space.name}</h1>
+              {userSpaces &&
+                userSpaces.length &&
+                userSpaces.map((space, index) => (
+                  <div
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleJoinSpace(space.id);
+                    }}
+                    key={index}
+                    className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all cursor-pointer"
+                  >
+                    <div className="flex flex-col justify-between items-center">
+                      <img
+                        className="mb-2 h-[200px] object-cover"
+                        src={
+                          space.thumbnail === "thumbnail1"
+                            ? "/thumbnail_empty_space.jpg"
+                            : space.thumbnail === "thumbnail2"
+                              ? "/thumbnail_office.png"
+                              : ""
+                        }
+                        alt="NO thumbnail found"
+                      />
+                      <h1 className="text-xl font-semibold">{space.name}</h1>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
 
           {/* Templates & Create Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
+            <div
+              className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? "bg-gray-50" : "bg-white"}`}
+            >
               <h2 className="text-xl font-semibold mb-4">Create New Space</h2>
               <p className="text-gray-600 mb-4">Build your own custom virtual space from scratch</p>
               <button
-                onClick={()=>setIsNewSpaceFormOpen(prev=>!prev)}
-                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 w-full cursor-pointer">
+                onClick={() => setIsNewSpaceFormOpen((prev) => !prev)}
+                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 w-full cursor-pointer"
+              >
                 Create Custom Space
               </button>
             </div>
-            <div className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
+            <div
+              className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? "bg-gray-50" : "bg-white"}`}
+            >
               <h2 className="text-xl font-semibold mb-4">Use a Template</h2>
               <p className="text-gray-600 mb-4">Get started quickly with pre-designed spaces</p>
-              <button className="bg-indigo-100 text-indigo-700 px-6 py-2 rounded-lg hover:bg-indigo-200 w-full">
+              <button
+                onClick={() => setIsShowMapsOpen((prev) => !prev)}
+                className="bg-indigo-100 text-indigo-700 px-6 py-2 rounded-lg hover:bg-indigo-200 w-full"
+              >
                 Browse Templates
               </button>
             </div>
           </div>
 
           {/* Templates Grid */}
-          <div className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? 'bg-gray-50' : 'bg-white'}`}>
+          <div
+            className={`rounded-xl shadow-md p-6 ${isNewSpaceFormOpen ? "bg-gray-50" : "bg-white"}`}
+          >
             <h2 className="text-xl font-semibold mb-4">Popular Templates</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { name: "Office Space", icon: <Building className="h-6 w-6" />, color: "bg-blue-100 text-blue-600" },
-                { name: "Conference", icon: <Calendar className="h-6 w-6" />, color: "bg-green-100 text-green-600" },
-                { name: "Classroom", icon: <Video className="h-6 w-6" />, color: "bg-yellow-100 text-yellow-600" },
-                { name: "Social Space", icon: <Globe className="h-6 w-6" />, color: "bg-purple-100 text-purple-600" }
+                {
+                  name: "Office Space",
+                  icon: <Building className="h-6 w-6" />,
+                  color: "bg-blue-100 text-blue-600",
+                },
+                {
+                  name: "Conference",
+                  icon: <Calendar className="h-6 w-6" />,
+                  color: "bg-green-100 text-green-600",
+                },
+                {
+                  name: "Classroom",
+                  icon: <Video className="h-6 w-6" />,
+                  color: "bg-yellow-100 text-yellow-600",
+                },
+                {
+                  name: "Social Space",
+                  icon: <Globe className="h-6 w-6" />,
+                  color: "bg-purple-100 text-purple-600",
+                },
               ].map((template, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all cursor-pointer text-center">
-                  <div className={`w-12 h-12 rounded-full ${template.color} flex items-center justify-center mx-auto mb-3`}>
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all cursor-pointer text-center"
+                >
+                  <div
+                    className={`w-12 h-12 rounded-full ${template.color} flex items-center justify-center mx-auto mb-3`}
+                  >
                     {template.icon}
                   </div>
                   <h3 className="font-medium">{template.name}</h3>
@@ -296,9 +440,15 @@ const GatherTownAppLanding = () => {
             © {new Date().getFullYear()} Gather. All rights reserved.
           </div>
           <div className="flex space-x-6">
-            <a href="#" className="text-gray-500 hover:text-indigo-600">Help Center</a>
-            <a href="#" className="text-gray-500 hover:text-indigo-600">Privacy</a>
-            <a href="#" className="text-gray-500 hover:text-indigo-600">Terms</a>
+            <a href="#" className="text-gray-500 hover:text-indigo-600">
+              Help Center
+            </a>
+            <a href="#" className="text-gray-500 hover:text-indigo-600">
+              Privacy
+            </a>
+            <a href="#" className="text-gray-500 hover:text-indigo-600">
+              Terms
+            </a>
           </div>
         </div>
       </footer>

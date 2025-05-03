@@ -7,16 +7,17 @@ import { axios } from "../Axios/axios";
 import { config } from "../config";
 import { useLoader } from "../Context/UseLoader";
 import Loader from "./Loader";
+import ScheduleMeetingButton from "./ScheduleMeetingButton";
 
-interface spaceProps {
+interface SpaceProps {
   id: string;
   dimensions: string;
   name: string;
   spaceElements: {
     id: string;
-    x: integer;
-    y: integer;
-    elemendId: string;
+    x: number;
+    y: number;
+    elementId: string;
   }[];
 }
 
@@ -32,11 +33,13 @@ const EmptySpace: React.FC = () => {
   const { spaceId } = useParams();
   const [isValidSpaceId, setIsValidSpaceId] = useState<string>("");
   const { accessToken } = useAuth();
-  const [space, setSpace] = useState<spaceProps | null>(null);
+  const [space, setSpace] = useState<SpaceProps | null>(null);
   const { loading, showLoader, hideLoader } = useLoader();
-  const peer = useRef<RTCPeerConnection>(null);
+  const peer = useRef<RTCPeerConnection | null>(null);
   const [myStream, setMyStream] = useState<MediaStream | null>(null);
-  const [othersStream, setOtherStreams] = useState<MediaStream[] | []>([]);
+  const [othersStream, setOtherStreams] = useState<MediaStream[]>([]);
+
+  console.log("spaceId", spaceId);
 
   useEffect(() => {
     const getSpace = async () => {
@@ -49,9 +52,24 @@ const EmptySpace: React.FC = () => {
             },
           });
 
+          console.log(res);
+
           if (res.status === 200) {
             setIsValidSpaceId("true");
-            setSpace(res.data);
+            setSpace(res.data.spaceRes);
+            const joinedUserRes = await axios.post(
+              `${config.BackendUrl}/space/spaceJoined/${res.data.spaceRes.id}`,
+              {},
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              }
+            );
+
+            if (joinedUserRes.status !== 200) {
+              console.error("user joining space failed");
+            }
           } else {
             setIsValidSpaceId("false");
             setSpace(null);
@@ -65,7 +83,7 @@ const EmptySpace: React.FC = () => {
       }
     };
     getSpace();
-  }, [accessToken]);
+  }, [accessToken, spaceId, showLoader, hideLoader]);
 
   const createPeer = async () => {
     peer.current = new RTCPeerConnection({
@@ -85,7 +103,7 @@ const EmptySpace: React.FC = () => {
       peer.current?.addTrack(track, stream);
     });
 
-    const handleTrackRemoval = (stream: MediaStream) => {
+    const handleTrackRemoval = (removedTrack: MediaStreamTrack, stream: MediaStream) => {
       if (stream.getTracks().length === 0) {
         setOtherStreams((prev) => prev.filter((s) => s.id !== stream.id));
       }
@@ -99,8 +117,8 @@ const EmptySpace: React.FC = () => {
           const isStreamExists = prev.some((stream) => stream.id === incomingStream.id);
 
           if (!isStreamExists) {
-            incomingStream.onremovetrack = () => {
-              handleTrackRemoval(incomingStream);
+            incomingStream.onremovetrack = (e) => {
+              handleTrackRemoval(e.track, incomingStream);
             };
             return [...prev, incomingStream];
           }
@@ -146,7 +164,7 @@ const EmptySpace: React.FC = () => {
               debug: false,
             },
           },
-          backgroundColor: "#f5f5f5", // Light color for office floor base
+          backgroundColor: "#f5f5f5",
           scene: {
             preload,
             create,
@@ -158,6 +176,20 @@ const EmptySpace: React.FC = () => {
         let player: Phaser.Physics.Arcade.Sprite;
         const otherPlayers = new Map<string, Phaser.Physics.Arcade.Sprite>();
         let furniture: Phaser.Physics.Arcade.StaticGroup;
+
+        // Asset frame indices in the spritesheet
+        const ASSET_FRAMES = {
+          FLOOR_TILE: 0,
+          TABLE: 1,
+          CHAIR: 2,
+          DESK: 3,
+          PLANT: 4,
+          BOOKSHELF: 5,
+          WHITEBOARD: 6,
+          COFFEEMACHINE: 7,
+          LAMP: 8,
+          CARPET: 9,
+        };
 
         function preload(this: Phaser.Scene) {
           // Player avatars
@@ -184,16 +216,26 @@ const EmptySpace: React.FC = () => {
           this.load.image("coffeemachine", "/assets/coffeemachine.png");
           this.load.image("lamp", "/assets/lamp.png");
           this.load.image("carpet", "/assets/carpet.png");
+          this.load.image("big-table", "/assets/big-table.png");
+          this.load.image("chair-left", "/assets/chair-left.png");
+          this.load.image("chair-front", "/assets/chair-front.png");
+          this.load.image("chair-back", "/assets/chair-back.png");
+          this.load.image("chair-right", "/assets/chair-right.png");
+          this.load.image("pond", "/assets/pond.png");
+          this.load.image("wall", "/assets/wall.png");
+          this.load.image("grass", "/assets/grass.png");
+          this.load.image("wall-left", "/assets/wall-left.png");
         }
 
         function createFloor(scene: Phaser.Scene) {
-          // Create a tile sprite for the floor
-          scene.add.tileSprite(0, 0, spacex, spacey, "floor-tile").setOrigin(0, 0).setDepth(-1); // Place floor behind everything
+          scene.add
+            .tileSprite(0, 0, spacex, spacey, "floor-tile", ASSET_FRAMES.FLOOR_TILE)
+            .setOrigin(0, 0)
+            .setDepth(-1);
 
-          // Add a nice carpet in the center
           scene.add
             .image(spacex / 2, spacey / 2, "carpet")
-            .setScale(1)
+            .setScale(1.2)
             .setDepth(-0.5)
             .setAlpha(0.8);
         }
@@ -201,25 +243,22 @@ const EmptySpace: React.FC = () => {
         function createFurniture(scene: Phaser.Scene) {
           furniture = scene.physics.add.staticGroup();
 
-          // Create conference table in the center
           const centerTable = furniture
             .create(spacex / 2, spacey / 2, "table")
             .setScale(0.8)
             .refreshBody();
 
-          // Add chairs around the table
           const chairPositions = [
-            { x: centerTable.x - 80, y: centerTable.y },
-            { x: centerTable.x + 80, y: centerTable.y },
-            { x: centerTable.x, y: centerTable.y - 80 },
-            { x: centerTable.x, y: centerTable.y + 80 },
+            { x: centerTable.x - 80, y: centerTable.y, name: "chair-right" },
+            { x: centerTable.x + 80, y: centerTable.y, name: "chair-left" },
+            { x: centerTable.x, y: centerTable.y - 80, name: "chair-front" },
+            { x: centerTable.x, y: centerTable.y + 80, name: "chair-back" },
           ];
 
           chairPositions.forEach((pos) => {
-            furniture.create(pos.x, pos.y, "chair").setScale(0.8).refreshBody();
+            furniture.create(pos.x, pos.y, pos.name).setScale(0.9).refreshBody();
           });
 
-          // Create desks along the walls
           const deskPositions = [
             { x: 128, y: 128 },
             { x: spacex - 128, y: 128 },
@@ -231,7 +270,6 @@ const EmptySpace: React.FC = () => {
             furniture.create(pos.x, pos.y, "desk").setScale(0.8).refreshBody();
           });
 
-          // Add decoration - plants
           const plantPositions = [
             { x: 64, y: 64 },
             { x: spacex - 64, y: 64 },
@@ -240,10 +278,9 @@ const EmptySpace: React.FC = () => {
           ];
 
           plantPositions.forEach((pos) => {
-            furniture.create(pos.x, pos.y, "plant").setScale(0.8).refreshBody();
+            furniture.create(pos.x, pos.y, "plant").setScale(0.7).refreshBody();
           });
 
-          // Add bookshelves on walls
           furniture
             .create(spacex / 4, 64, "bookshelf")
             .setScale(0.8)
@@ -253,19 +290,16 @@ const EmptySpace: React.FC = () => {
             .setScale(0.8)
             .refreshBody();
 
-          // Add whiteboard
           furniture
             .create(spacex / 2, 64, "whiteboard")
             .setScale(0.8)
             .refreshBody();
 
-          // Add coffee machine
           furniture
             .create(spacex - 100, spacey / 2, "coffeemachine")
-            .setScale(0.8)
+            .setScale(0.7)
             .refreshBody();
 
-          // Add lamps for lighting effect
           const lampPositions = [
             { x: spacex / 4, y: spacey / 4 },
             { x: (3 * spacex) / 4, y: spacey / 4 },
@@ -274,9 +308,8 @@ const EmptySpace: React.FC = () => {
           ];
 
           lampPositions.forEach((pos) => {
-            scene.add.image(pos.x, pos.y, "lamp").setScale(0.8);
+            scene.add.image(pos.x, pos.y, "lamp").setScale(0.6);
 
-            // Add a simple light effect
             const lightCircle = scene.add.circle(pos.x, pos.y, 100, 0xffffcc, 0.2);
             scene.tweens.add({
               targets: lightCircle,
@@ -287,7 +320,6 @@ const EmptySpace: React.FC = () => {
             });
           });
 
-          // Add space elements from backend if any
           if (space && space.spaceElements && space.spaceElements.length) {
             space.spaceElements.forEach((spaceElem) => {
               furniture.create(spaceElem.x, spaceElem.y, "table").setScale(0.8).refreshBody();
@@ -298,7 +330,7 @@ const EmptySpace: React.FC = () => {
         function drawGrid(scene: Phaser.Scene) {
           const gridSize = 64;
           const graphics = scene.add.graphics();
-          graphics.lineStyle(0.5, 0xaaaaaa, 0.05); // Make grid more subtle
+          graphics.lineStyle(0.5, 0xaaaaaa, 0.05);
 
           for (let x = 0; x <= spacex; x += gridSize) {
             graphics.moveTo(x, 0);
@@ -314,7 +346,6 @@ const EmptySpace: React.FC = () => {
         }
 
         async function create(this: Phaser.Scene) {
-          // Add visual elements to the space
           createFloor(this);
           drawGrid(this);
           createFurniture(this);
@@ -611,7 +642,6 @@ const EmptySpace: React.FC = () => {
             targetX += direction.x;
             targetY += direction.y;
 
-            // Check collisions with other players
             let isCollision: boolean = false;
             otherPlayers.forEach((otherPlayer) => {
               if (otherPlayer.x === targetX && otherPlayer.y === targetY) {
@@ -619,7 +649,6 @@ const EmptySpace: React.FC = () => {
               }
             });
 
-            // Check collisions with furniture
             let furnitureCollision = false;
             furniture.children.iterate((child: any) => {
               if (
@@ -760,61 +789,91 @@ const EmptySpace: React.FC = () => {
 
   if (isValidSpaceId === "true") {
     return (
-      <div className="h-screen w-screen flex flex-col">
+      <div className="h-screen w-screen flex flex-col bg-gray-400">
         {/* header */}
-        <header className="h-12 w-full border-b-2 border-black bg-blue-600 text-white flex items-center px-4">
+        <header className="h-16 w-full border-b-2 border-black bg-blue-600 text-white flex items-center px-4">
           <h2 className="text-xl font-bold">{space?.name || "Office Space"}</h2>
         </header>
 
+        {/* Game container */}
+        <div
+          ref={gameRef}
+          className="flex w-full relative overflow-hidden justify-center items-center"
+        ></div>
+
+        {/* Video streams container */}
         {othersStream && othersStream.length > 0 && (
-          <div className="absolute top-12 w-screen h-full">
-            <div className="w-full px-10 flex items-center justify-center">
-              {othersStream &&
-                othersStream.length > 0 &&
-                othersStream.map((stream, index) => {
-                  return (
-                    <video
-                      className="h-[200px] w-[300px] rounded-lg border-2 border-blue-500 m-2 shadow-lg"
-                      key={index}
-                      ref={(video) => {
-                        if (video) {
-                          video.srcObject = stream;
-                          video.play();
-                        }
-                      }}
-                      autoPlay
-                      playsInline
-                    />
-                  );
-                })}
-            </div>
+          <div className="absolute top-12 w-full px-4 flex flex-wrap justify-center">
+            {myStream && (
+              <video
+                className="w-32 h-24 rounded-md m-2 border-2 border-blue-400"
+                ref={(video) => {
+                  if (video && !video.srcObject && myStream) {
+                    video.srcObject = myStream;
+                    video.muted = true;
+                    video.play().catch((err) => console.error("Error playing video:", err));
+                  }
+                }}
+                autoPlay
+                playsInline
+              />
+            )}
+
+            {othersStream.map((stream) => (
+              <video
+                key={stream.id}
+                className="w-32 h-24 rounded-md m-2 border-2 border-green-400"
+                ref={(video) => {
+                  if (video && !video.srcObject) {
+                    video.srcObject = stream;
+                    video.play().catch((err) => console.error("Error playing video:", err));
+                  }
+                }}
+                autoPlay
+                playsInline
+              />
+            ))}
           </div>
         )}
 
-        <div className="h-full w-full flex justify-center items-center bg-gray-100">
-          <div
-            ref={gameRef}
-            className="w-[1000px] h-[600px] overflow-hidden flex justify-center items-center rounded-lg shadow-xl"
-          />
-        </div>
-
-        {/* footer */}
-        <footer className="h-24 w-full border-t-2 border-black bg-gray-200 flex items-center justify-center">
-          <div className="flex space-x-4">
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-md shadow hover:bg-blue-600">
-              Mute Video
-            </button>
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-md shadow hover:bg-blue-600">
-              Share Screen
-            </button>
-            <button className="bg-red-500 text-white px-4 py-2 rounded-md shadow hover:bg-red-600">
-              Leave Space
-            </button>
+        {/* Controls panel */}
+        <div className="h-24 w-full bg-gray-500 border-t-2 border-gray-600 flex items-center justify-center gap-4 px-4">
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            onClick={() => {
+              // Toggle microphone or camera
+              if (myStream) {
+                const videoTracks = myStream.getVideoTracks();
+                if (videoTracks.length > 0) {
+                  videoTracks[0].enabled = !videoTracks[0].enabled;
+                }
+              }
+            }}
+          >
+            <span>Camera</span>
+          </button>
+          <button
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            onClick={() => {
+              // Leave meeting
+              if (myStream) {
+                myStream.getTracks().forEach((track) => track.stop());
+              }
+              window.location.href = "/spaces";
+            }}
+          >
+            <span>Leave</span>
+          </button>
+          <ScheduleMeetingButton />
+          <div className="ml-auto text-sm text-gray-600">
+            <span>Use arrow keys to move</span>
           </div>
-        </footer>
+        </div>
       </div>
     );
   }
+
+  return <Loader />;
 };
 
 export default EmptySpace;

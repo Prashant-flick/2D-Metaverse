@@ -5,12 +5,17 @@
   "exports": {
     "./client": "./src/index.ts"
   },
-  "scripts": {},
+  "scripts": {
+    "build": "npx tsc -b",
+    "start": "node dist/seed.js",
+    "dev": "pnpm run build && pnpm run start"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.1.0"
+    "@prisma/client": "^6.1.0",
+    "typescript": "^5.8.3"
   }
 }

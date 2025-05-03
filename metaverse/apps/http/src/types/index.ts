@@ -26,6 +26,14 @@ export const createSpaceSchema = z.object({
     thumbnail: z.string().optional(),
 })
 
+export const createMeetingSchema = z.object({
+    name: z.string(),
+    date: z.string(),
+    time: z.string(),
+    spaceId: z.string(),
+    createdAt: z.string(),
+})
+
 export const addElementSchema = z.object({
     spaceId: z.string(),
     elementId: z.string(),
