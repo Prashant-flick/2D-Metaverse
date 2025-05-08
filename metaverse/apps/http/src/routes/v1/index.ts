@@ -151,6 +151,7 @@ router.get("/elements", userMiddleware, async (req, res) => {
                 imageUrl: e.ImageUrl,
                 width: e.width,
                 height: e.height,
+                isStatic: e.isStatic
             }))
         })
     } catch (error) {
