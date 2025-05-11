@@ -11,6 +11,7 @@ async function main() {
       width: 64,
       ImageUrl: '/assets/floor-tile.png',
       isStatic: true,
+      depth: -10
     },
     {
       name: 'table',
@@ -18,6 +19,7 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/table.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'desk',
@@ -25,6 +27,7 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/desk.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'plant',
@@ -32,6 +35,7 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/plant.png',
       isStatic: false,
+      depth: 1
     },
     {
       name: 'bookshelf',
@@ -39,6 +43,7 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/bookshelf.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'whiteboard',
@@ -46,6 +51,7 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/whiteboard.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'coffeemachine',
@@ -53,6 +59,7 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/coffeemachine.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'lamp',
@@ -60,6 +67,7 @@ async function main() {
       width: 64,
       ImageUrl: '/assets/lamp.png',
       isStatic: false,
+      depth: 1
     },
     {
       name: 'carpet',
@@ -67,6 +75,7 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/carpet.png',
       isStatic: true,
+      depth: -1
     },
     {
       name: 'big-table',
@@ -74,6 +83,7 @@ async function main() {
       width: 192,
       ImageUrl: '/assets/big-table.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'chair-left',
@@ -81,18 +91,22 @@ async function main() {
       width: 64,
       ImageUrl: '/assets/chair-left.png',
       isStatic: false,
-    }, {
+      depth: 0
+    },
+    {
       name: 'chair-front',
       height: 64,
       width: 64,
       ImageUrl: '/assets/chair-front.png',
       isStatic: false,
+      depth: 0
     }, {
       name: 'chair-back',
       height: 64,
       width: 64,
       ImageUrl: '/assets/chair-back.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'chair-right',
@@ -100,6 +114,7 @@ async function main() {
       width: 64,
       ImageUrl: '/assets/chair-right.png',
       isStatic: false,
+      depth: 0
     },
     {
       name: 'pond',
@@ -107,6 +122,7 @@ async function main() {
       width: 192,
       ImageUrl: '/assets/pond.png',
       isStatic: true,
+      depth: 0
     },
     {
       name: 'wall-horizontal',
@@ -114,13 +130,15 @@ async function main() {
       width: 128,
       ImageUrl: '/assets/wall-horizontal.png',
       isStatic: true,
+      depth: 0
     },
     {
       name: "wall-vertical",
       height: 64,
       width: 64,
       ImageUrl: '/assets/wall-vertical.png',
-      isStatic: true
+      isStatic: true,
+      depth: 0
     },
     {
       name: 'grass',
@@ -128,6 +146,7 @@ async function main() {
       width: 64,
       ImageUrl: '/assets/grass.png',
       isStatic: true,
+      depth: -9
     },
   ];
 

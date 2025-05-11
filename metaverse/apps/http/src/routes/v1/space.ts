@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addElementSchema, createMeetingSchema, createSpaceSchema } from "../../types";
+import { addElementSchema, createMeetingSchema, createSpaceSchema, removeElementSchema } from "../../types";
 import client from "@repo/db/client"
 import { userMiddleware } from "../../middleware/user";
 import { sendEmail } from "../../lib/email";
@@ -61,7 +61,8 @@ spaceRouter.get("/recentSpaces", async (req, res) => {
         id: e.id,
         name: e.name,
         dimensions: e.dimensions,
-        thumbnail: e.thumbnail
+        thumbnail: e.thumbnail,
+        ownerId: e.creatorId
       }))
     })
   } catch (error) {
@@ -84,7 +85,11 @@ spaceRouter.get("/:spaceId", async (req, res) => {
         id: true,
         name: true,
         dimensions: true,
-        spaceElements: true
+        spaceElements: {
+          include: {
+            element: true,
+          },
+        }
       }
     })
 
@@ -94,24 +99,16 @@ spaceRouter.get("/:spaceId", async (req, res) => {
       dimensions: space?.dimensions,
       elements: space?.spaceElements.map(e => ({
         id: e.id,
-        elementId: e.elementId,
         x: e.x,
         y: e.y,
-        name: ''
+        name: e.element.name,
+        depth: e.depth,
+        isStatic: e.element.isStatic,
+        height: e.element.height,
+        widht: e.element.width,
+        imageUrl: e.element.ImageUrl
       }))
     }
-
-    spaceRes.elements?.map(async (elem) => {
-      const elemRes = await client.element.findFirst({
-        where: {
-          id: elem.elementId
-        }
-      })
-      return {
-        ...elem,
-        name: elemRes?.name
-      }
-    })
 
     res.status(200).json({
       message: "space fetching success",
@@ -127,6 +124,7 @@ spaceRouter.post("/element", async (req, res) => {
 
   if (!parsedData.success) {
     res.status(400).json({ message: "type validation failed" });
+
     return;
   }
 
@@ -144,12 +142,19 @@ spaceRouter.post("/element", async (req, res) => {
       return;
     }
 
+    const elemRes = await client.element.findFirst({
+      where: {
+        id: parsedData.data.elementId
+      }
+    })
+
     const spaceElemRes = await client.spaceElements.create({
       data: {
         elementId: parsedData.data.elementId,
         spaceId: parsedData.data.spaceId,
         x: parsedData.data.x,
         y: parsedData.data.y,
+        depth: elemRes?.depth!,
       }
     })
 
@@ -214,6 +219,7 @@ spaceRouter.post("/", async (req, res) => {
               spaceId: space.id,
               x: m.x,
               y: m.y,
+              depth: m.depth
             })),
           });
 
@@ -251,6 +257,38 @@ spaceRouter.post("/", async (req, res) => {
     }
   } catch (error) {
     res.status(400).json({ message: "space creation failed" })
+  }
+})
+
+spaceRouter.post("/leaveRoom/:spaceId", async (req, res) => {
+  const spaceId = req.params.spaceId;
+  if (!spaceId) {
+    res.status(400)
+      .json({
+        message: "spacId is required"
+      })
+    return;
+  }
+
+  try {
+    await client.spaceJoinedUsers.delete({
+      where: {
+        spaceId_userId: {
+          spaceId,
+          userId: req.userId
+        }
+      }
+    })
+
+    res.status(200)
+      .json({
+        message: "leaving room successfull"
+      })
+  } catch (error) {
+    res.status(400)
+      .json({
+        message: "leaving room failed"
+      })
   }
 })
 
@@ -385,6 +423,42 @@ spaceRouter.post("/createMeeting", async (req, res) => {
   }
 })
 
+spaceRouter.delete("/element/:elementId", async (req, res) => {
+  const spaceElemId = req.params.elementId;
+  const parsedData = removeElementSchema.safeParse(req.body);
+
+  if (!parsedData.success && !spaceElemId) {
+    res.status(400).json({ message: "type validation failed or spaceElemId missing" });
+    return;
+  }
+
+  try {
+    if (spaceElemId) {
+      await client.spaceElements.delete({
+        where: {
+          id: spaceElemId
+        }
+      })
+    } else if (parsedData.data) {
+      await client.spaceElements.deleteMany({
+        where: {
+          elementId: parsedData.data.elementId,
+          spaceId: parsedData.data.spaceId,
+          x: parsedData.data.x,
+          y: parsedData.data.y,
+          depth: parsedData.data.depth
+        }
+      })
+    }
+    res.status(200).json({
+      message: "deletion success"
+    })
+  } catch (error) {
+    res.status(400).json({ message: "deletion of space element failed" });
+  }
+})
+
+
 spaceRouter.delete("/:spaceId", async (req, res) => {
   const spaceId = req.params.spaceId as string;
 
@@ -414,6 +488,18 @@ spaceRouter.delete("/:spaceId", async (req, res) => {
         },
       });
 
+      await transactionClient.meeting.deleteMany({
+        where: {
+          spaceId
+        }
+      })
+
+      await transactionClient.spaceJoinedUsers.deleteMany({
+        where: {
+          spaceId
+        }
+      })
+
       await transactionClient.space.delete({
         where: {
           id: spaceId,
@@ -429,23 +515,7 @@ spaceRouter.delete("/:spaceId", async (req, res) => {
   }
 })
 
-spaceRouter.delete("/element/:elementId", async (req, res) => {
-  const spaceElemId = req.params.elementId;
 
-  try {
-    await client.spaceElements.delete({
-      where: {
-        id: spaceElemId
-      }
-    })
-
-    res.status(200).json({
-      message: "deletion success"
-    })
-  } catch (error) {
-    res.status(400).json({ message: "deletion of space element failed" });
-  }
-})
 
 
 

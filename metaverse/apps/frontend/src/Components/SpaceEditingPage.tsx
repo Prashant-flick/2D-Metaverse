@@ -1,67 +1,140 @@
 import React, { useEffect, useState } from "react";
-import { SpaceEditCanvas } from "./SpaceEditCanvas";
+import { SpaceEditCanvas, SpaceElemProps } from "./SpaceEditCanvas";
 import { useAuth } from "../Context/UseAuth";
-export interface elemProps {
-  type: string;
-  label: string;
-  depth: number;
-}
-const elements = [
-  { type: "floor-tile", label: "Floor-Tile", depth: -10 },
-  { type: "table", label: "Table", depth: 0 },
-  { type: "chair-left", label: "Chair-Left", depth: 0 },
-  { type: "chair-right", label: "Chair-Right", depth: 0 },
-  { type: "chair-front", label: "Chair-Front", depth: 0 },
-  { type: "chair-back", label: "Chair-Back", depth: 0 },
-  { type: "big-table", label: "Big-Chair", depth: 0 },
-  { type: "desk", label: "Desk", depth: 0 },
-  { type: "plant", label: "Plant", depth: 0 },
-  { type: "bookshelf", label: "BookShelf", depth: 0 },
-  { type: "whiteboard", label: "WhiteBoard", depth: 0 },
-  { type: "lamp", label: "Lamp", depth: 0 },
-  { type: "carpet", label: "Carpet", depth: 0 },
-  { type: "pond", label: "Pond", depth: 0 },
-  { type: "wall", label: "Wall-Horizontal", depth: 0 },
-  { type: "wall-left", label: "Wall-Vertical", depth: 0 },
-  { type: "grass", label: "Grass", depth: -9 },
-];
+import axios from "axios";
+import { config } from "../config";
+import { useParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
-const App: React.FC = () => {
+export interface elemProps {
+  name: string;
+  depth: number;
+  height: number;
+  width: number;
+  id: string;
+  imageUrl: string;
+  isStatic: boolean;
+}
+
+export const SpaceEditingPage: React.FC = () => {
   const [currElem, setCurrElem] = useState<elemProps | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [elements, setElements] = useState<elemProps[]>([]);
   const { accessToken } = useAuth();
+  const { spaceId } = useParams();
+  const [savingLoader, setSavingLoader] = useState(false);
 
   useEffect(() => {
     if (accessToken) {
-      const main = () => {
-        const elementsRes = await;
-      };
-    }
-  });
+      const main = async () => {
+        const elementsRes = await axios.get(`${config.BackendUrl}/elements`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-  const handleDragStart = (e: React.DragEvent, type: string, depth: number) => {
-    e.dataTransfer.setData("type", type);
-    e.dataTransfer.setData("depth", depth.toString());
+        const elements = elementsRes.data.elements;
+        setElements(elements);
+      };
+      main();
+    }
+  }, [accessToken]);
+
+  const handleDragStart = (e: React.DragEvent, elem: elemProps) => {
+    e.dataTransfer.setData("name", elem.name);
+    e.dataTransfer.setData("depth", elem.depth.toString());
+    e.dataTransfer.setData("width", elem.width.toString());
+    e.dataTransfer.setData("height", elem.height.toString());
+    e.dataTransfer.setData("isStatic", elem.isStatic.toString());
+    e.dataTransfer.setData("elementId", elem.id);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const type = e.dataTransfer.getData("type");
+    const name = e.dataTransfer.getData("name");
     const depth = e.dataTransfer.getData("depth");
+    const width = e.dataTransfer.getData("width");
+    const height = e.dataTransfer.getData("height");
+    const isStatic = e.dataTransfer.getData("isStatic");
+    const elementId = e.dataTransfer.getData("elementId");
     const boundingRect = (e.target as HTMLElement).getBoundingClientRect();
     const detail = {
-      type,
       x: e.clientX - boundingRect.left,
       y: e.clientY - boundingRect.top,
-      depth,
+      depth: Number(depth),
+      width: Number(width),
+      height: Number(height),
+      isStatic: isStatic === "true" ? true : false,
+      name,
+      elementId,
     };
     window.dispatchEvent(new CustomEvent("drop-on-canvas", { detail }));
   };
 
   const handleClickSave = async () => {
-    const elements = JSON.parse(localStorage.getItem("elements") || "[]");
-    if (elements && elements.length) {
-      console.log("elements send success");
+    if (accessToken && spaceId) {
+      setSavingLoader(true);
+      try {
+        const prevElements = JSON.parse(localStorage.getItem(`prev${spaceId}`) || "[]");
+        const elements = JSON.parse(localStorage.getItem(`${spaceId}`) || "[]");
+
+        const removedElements = prevElements.filter(
+          (prevElem: SpaceElemProps) =>
+            !elements.some((elem: SpaceElemProps) => elem.id === prevElem.id)
+        );
+        const addedElements = elements.filter(
+          (elem: SpaceElemProps) =>
+            !prevElements.some((prevElem: SpaceElemProps) => elem.id === prevElem.id)
+        );
+
+        if (elements && elements.length) {
+          for (const elem of addedElements) {
+            try {
+              await axios.post(
+                `${config.BackendUrl}/space/element`,
+                {
+                  x: elem.x,
+                  y: elem.y,
+                  depth: elem.depth,
+                  elementId: elem.elementId,
+                  spaceId,
+                },
+                {
+                  headers: {
+                    Authorization: `Beaere ${accessToken}`,
+                  },
+                }
+              );
+            } catch {
+              console.error(`${elem.id} sending failed`);
+            }
+          }
+
+          for (const elem of removedElements) {
+            try {
+              await axios.delete(`${config.BackendUrl}/space/element/${elem.elementId}`, {
+                data: {
+                  spaceId,
+                  elementId: elem.elementId,
+                  x: elem.x,
+                  y: elem.y,
+                  depth: elem.depth,
+                },
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              });
+            } catch {
+              console.error(`${elem.id} deleting failed`);
+            }
+          }
+        }
+        localStorage.setItem(`prev${spaceId}`, JSON.stringify(elements));
+      } catch {
+        console.log("Error saving elements");
+      } finally {
+        setSavingLoader(false);
+      }
     }
   };
 
@@ -72,7 +145,6 @@ const App: React.FC = () => {
 
   const handleClearAll = () => {
     window.dispatchEvent(new CustomEvent("clear-all-canvas"));
-    localStorage.removeItem("elements");
   };
 
   return (
@@ -94,9 +166,13 @@ const App: React.FC = () => {
             <h3 className="text-xl font-bold text-indigo-300">Elements</h3>
             <button
               onClick={handleClickSave}
-              className="bg-indigo-600 hover:bg-indigo-700 transition-colors px-4 py-2 rounded-lg text-white font-medium shadow-md"
+              disabled={savingLoader}
+              className={`relative flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 transition-colors px-4 py-2 rounded-lg text-white font-medium shadow-md ${
+                savingLoader ? "opacity-70 cursor-not-allowed" : ""
+              }`}
             >
-              Save
+              {savingLoader && <Loader2 className="h-5 w-5 animate-spin" />}
+              {savingLoader ? "Saving..." : "Save"}
             </button>
           </div>
 
@@ -107,29 +183,31 @@ const App: React.FC = () => {
           <div className="grid grid-cols-2 gap-3 overflow-y-auto pr-2">
             {elements.map((el) => (
               <div
-                key={el.type}
+                key={el.name}
                 draggable
                 onDragStart={(e) => {
                   setCurrElem(el);
-                  handleDragStart(e, el.type, el.depth);
+                  handleDragStart(e, el);
                 }}
                 onClick={() => {
                   setCurrElem(el);
                 }}
                 className={`py-2 px-3 border rounded-lg flex flex-col items-center justify-center cursor-grab transition-all hover:scale-105 ${
-                  currElem?.type === el.type
+                  currElem?.name === el.name
                     ? "bg-indigo-700 border-indigo-400"
                     : "bg-gray-700 border-gray-600 hover:border-indigo-400"
                 }`}
               >
                 <div className="w-full h-16 flex items-center justify-center mb-1">
                   <img
-                    src={`/assets/${el.type}.png`}
-                    alt={el.label}
+                    src={`/assets/${el.name}.png`}
+                    alt={el.name.toUpperCase()}
                     className="object-contain max-h-full"
                   />
                 </div>
-                <span className="text-xs font-medium truncate w-full text-center">{el.label}</span>
+                <span className="text-xs font-medium truncate w-full text-center">
+                  {el.name.toUpperCase()}
+                </span>
               </div>
             ))}
           </div>
@@ -156,5 +234,3 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-export default App;

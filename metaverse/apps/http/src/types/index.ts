@@ -39,6 +39,15 @@ export const addElementSchema = z.object({
     elementId: z.string(),
     x: z.number(),
     y: z.number(),
+    depth: z.number()
+})
+
+export const removeElementSchema = z.object({
+    spaceId: z.string(),
+    elementId: z.string(),
+    x: z.number(),
+    y: z.number(),
+    depth: z.number()
 })
 
 export const createElementSchema = z.object({
